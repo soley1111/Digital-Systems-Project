@@ -88,59 +88,53 @@ export default function EditHubModal() {
       Alert.alert('Error', 'Please provide a hub name');
       return;
     }
-
-    // Filter out deleted locations before checking if any remain
+  
     const remainingLocations = locations.filter((_, index) => !deletes.has(index));
     if (remainingLocations.length === 0) {
       Alert.alert('Error', 'Please add at least one location');
       return;
     }
-
+  
     setLoading(true);
-
+  
     try {
       if (isEdit) {
-        // Update existing hub
         const batch = writeBatch(db);
-        
-        // 1. Update hub document
+  
         const hubRef = doc(db, 'hubs', hubId);
         batch.update(hubRef, {
           name: hubName,
           color: selectedColor,
           updatedAt: serverTimestamp()
         });
-
-        // 2. Handle locations
-        const currentLocationsQuery = query(
-          collection(db, 'locations'),
-          where('hubId', '==', hubId)
-        );
-        const currentLocationsSnapshot = await getDocs(currentLocationsQuery);
-        const currentLocations = currentLocationsSnapshot.docs.map(doc => ({
-          id: doc.id,
-          name: doc.data().name
-        }));
-
-        // a. Find locations that were removed (either deleted or renamed)
-        const removedLocations = currentLocations.filter(
-          loc => !remainingLocations.includes(loc.name)
-        );
-        
-        // b. Delete removed locations
-        removedLocations.forEach(loc => {
-          batch.delete(doc(db, 'locations', loc.id));
-        });
-
-        // c. Find new locations that need to be added
-        const existingLocationNames = currentLocations.map(loc => loc.name);
-        const newLocations = remainingLocations.filter(
-          loc => !existingLocationNames.includes(loc)
-        );
-
-        // d. Create new location documents
-        const newLocationIds = [];
-        for (const locName of newLocations) {
+  
+        // New logic for handling location updates
+        const updatedLocationIds: string[] = [];
+  
+        for (let i = 0; i < existingLocationDocs.length; i++) {
+          const existingDoc = existingLocationDocs[i];
+  
+          if (deletes.has(i)) {
+            // Delete this location
+            batch.delete(doc(db, 'locations', existingDoc.id));
+          } else {
+            // Update name if it changed
+            const newName = locations[i];
+            if (newName !== existingDoc.name) {
+              batch.update(doc(db, 'locations', existingDoc.id), {
+                name: newName,
+                updatedAt: serverTimestamp(),
+              });
+            }
+            updatedLocationIds.push(existingDoc.id);
+          }
+        }
+  
+        // Add any newly added locations beyond the length of existing ones
+        const newLocationIds: string[] = [];
+        for (let i = existingLocationDocs.length; i < locations.length; i++) {
+          if (deletes.has(i)) continue;
+          const locName = locations[i];
           const locRef = doc(collection(db, 'locations'));
           batch.set(locRef, {
             name: locName,
@@ -151,25 +145,18 @@ export default function EditHubModal() {
           });
           newLocationIds.push(locRef.id);
         }
-
-        // e. Update hub's locations array
-        const remainingLocationIds = currentLocations
-          .filter(loc => remainingLocations.includes(loc.name))
-          .map(loc => loc.id);
-        
+  
         batch.update(hubRef, {
-          locations: [...remainingLocationIds, ...newLocationIds]
+          locations: [...updatedLocationIds, ...newLocationIds],
         });
-
+  
         await batch.commit();
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       } else {
-        // Create new hub - filter out any locations marked for deletion before saving
         const locationsToSave = locations.filter((_, index) => !deletes.has(index));
-        
+  
         const batch = writeBatch(db);
-        
-        // 1. Create hub document
+  
         const hubRef = doc(collection(db, 'hubs'));
         batch.set(hubRef, {
           name: hubName,
@@ -178,8 +165,7 @@ export default function EditHubModal() {
           locations: [],
           createdAt: serverTimestamp()
         });
-
-        // 2. Create location documents
+  
         const locationIds = [];
         for (const locName of locationsToSave) {
           const locRef = doc(collection(db, 'locations'));
@@ -192,22 +178,20 @@ export default function EditHubModal() {
           });
           locationIds.push(locRef.id);
         }
-
-        // 3. Update hub with location IDs
+  
         batch.update(hubRef, {
           locations: locationIds
         });
-
-        // 4. Update user's hubs array
+  
         const userRef = doc(db, 'users', auth.currentUser?.email as string);
         batch.update(userRef, {
           hubs: arrayUnion(hubRef.id)
         });
-
+  
         await batch.commit();
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
-      
+  
       router.back();
     } catch (error) {
       console.error("Error saving hub:", error);
@@ -217,6 +201,7 @@ export default function EditHubModal() {
       setLoading(false);
     }
   };
+  
 
   const addLocation = () => {
     const trimmedLocation = location.trim();
