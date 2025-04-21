@@ -105,15 +105,15 @@ export default function ProfileScreen() {
       </View>
       <View style={styles.logOutButtonContainer}>
         <TouchableOpacity style={styles.logOutButton} onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); // Add haptic feedback
-          handleSignOut(); // Existing delete functionality
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          handleSignOut();
         }}>
           <Feather name="log-out" size={18} color="white" style={styles.logOutIcon} />
           <Text style={styles.logOutButtonText}>Sign Out</Text>
         </TouchableOpacity>
       </View>
       <View style={styles.settingsLabelContainer}>
-        <Text style={styles.settingsLabel}>App Settings</Text>
+        <Text style={styles.settingsLabel}>User Settings</Text>
       </View>
       <View style={styles.settingsContainer}>
         <TouchableOpacity style={styles.settingItem} onPress={() => router.push('/user-hubs')}>
@@ -126,6 +126,18 @@ export default function ProfileScreen() {
               <Text style={styles.settingText}>My Categories</Text>
             </TouchableOpacity>
         </Link>
+        <TouchableOpacity
+          style={[styles.settingItem, { borderBottomWidth: 1 }]}
+          onPress={() => setIsModalOpen(true)}
+        >
+          <AntDesign name="delete" size={20} color="white" style={styles.settingIcon} />
+          <Text style={styles.settingText}>Delete Account</Text>
+        </TouchableOpacity>
+      </View>
+      <View style={styles.settingsLabelContainer}>
+        <Text style={styles.settingsLabel}>App Settings</Text>
+      </View>
+      <View style={styles.settings1Container}>
         <View style={styles.settingItem}>
           <Feather name="bell" size={20} color="white" style={styles.settingIcon} />
           <Text style={styles.settingText}>Notifications</Text>
@@ -141,10 +153,7 @@ export default function ProfileScreen() {
             <Feather name="info" size={20} color="white" style={styles.settingIcon} />
             <Text style={styles.settingText}>About</Text>
           </TouchableOpacity>
-        <TouchableOpacity style={styles.settingItem} onPress={() => setIsModalOpen(true)}>
-          <AntDesign name="delete" size={20} color="white" style={styles.settingIcon} />
-          <Text style={styles.settingText}>Delete Account</Text>
-        </TouchableOpacity>
+        
       </View>
       
       {/* Modal for account deletion */}
@@ -301,12 +310,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'gray',
   },
   logOutButtonContainer: {
-    width: '90%', // Match the width of userProfileContainer
-    marginTop: 15, // Slightly below the userProfileContainer
+    width: '90%',
+    marginTop: 15,
     alignItems: 'center',
   },
   logOutButton: {
-    flexDirection: 'row', // To align the icon and text horizontally
+    flexDirection: 'row',
     backgroundColor: Colours.tertiary_colour,
     borderRadius: 10,
     padding: 12,
@@ -315,7 +324,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   logOutIcon: {
-    marginRight: 8, // Space between the icon and text
+    marginRight: 8,
   },
   logOutButtonText: {
     color: 'white',
@@ -336,7 +345,15 @@ const styles = StyleSheet.create({
   },
   settingsContainer: {
     width: '90%',
-    height: 415,
+    height: 160,
+    borderRadius: 15,
+    marginTop: 0,
+    alignItems: 'center',
+    backgroundColor: Colours.header_colour,
+  },
+  settings1Container: {
+    width: '90%',
+    height: 115,
     borderRadius: 15,
     marginTop: 0,
     alignItems: 'center',
@@ -349,7 +366,7 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.2)', // Light border color
+    borderBottomColor: 'rgba(255, 255, 255, 0.2)',
   },
   settingIcon: {
     marginRight: 15,
@@ -360,6 +377,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   notificationSwitch: {
-    marginLeft: 'auto', // Push the switch to the right
+    marginLeft: 'auto',
   },
 });

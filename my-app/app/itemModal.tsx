@@ -9,7 +9,8 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  ActivityIndicator
+  ActivityIndicator,
+  FlatList
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { AntDesign } from '@expo/vector-icons';
@@ -39,6 +40,11 @@ interface Location {
   name: string;
 }
 
+interface Category {
+  id: string;
+  name: string;
+}
+
 export default function ItemModal() {
   const router = useRouter();
   const [name, setName] = useState('');
@@ -48,6 +54,8 @@ export default function ItemModal() {
   const [loading, setLoading] = useState(false);
   const [hubs, setHubs] = useState<Hub[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedHubId, setSelectedHubId] = useState('');
   const [selectedLocationId, setSelectedLocationId] = useState('');
   const [showHubPicker, setShowHubPicker] = useState(false);
@@ -73,7 +81,25 @@ export default function ItemModal() {
       }
     };
 
+    const fetchCategories = async () => {
+      try {
+        const categoriesRef = collection(db, 'categories');
+        const q = query(categoriesRef, where('owner', '==', auth.currentUser?.email));
+        const querySnapshot = await getDocs(q);
+        
+        const userCategories = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          name: doc.data().name
+        }));
+        
+        setCategories(userCategories);
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+      }
+    };
+
     fetchHubs();
+    fetchCategories();
   }, []);
 
   useEffect(() => {
@@ -103,6 +129,16 @@ export default function ItemModal() {
 
     fetchLocations();
   }, [selectedHubId]);
+
+  const toggleCategorySelection = (categoryId: string) => {
+    setSelectedCategories(prev => {
+      if (prev.includes(categoryId)) {
+        return prev.filter(id => id !== categoryId);
+      } else {
+        return [...prev, categoryId];
+      }
+    });
+  };
 
   const saveItem = async () => {
     if (!name.trim()) {
@@ -134,6 +170,7 @@ export default function ItemModal() {
         qrCode: qrCode.trim(),
         locationId: selectedLocationId,
         hubId: selectedHubId,
+        categories: selectedCategories, // Save selected category IDs
         owner: auth.currentUser?.email,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
@@ -165,6 +202,23 @@ export default function ItemModal() {
     const location = locations.find(l => l.id === selectedLocationId);
     return location ? location.name : 'LOCATION';
   };
+
+  const renderCategoryItem = ({ item }: { item: Category }) => (
+    <TouchableOpacity
+      style={[
+        styles.categoryPill,
+        selectedCategories.includes(item.id) && styles.selectedCategoryPill
+      ]}
+      onPress={() => toggleCategorySelection(item.id)}
+    >
+      <Text style={[
+        styles.categoryPillText,
+        selectedCategories.includes(item.id) && styles.selectedCategoryPillText
+      ]}>
+        {item.name}
+      </Text>
+    </TouchableOpacity>
+  );
 
   return (
     <KeyboardAvoidingView
@@ -217,92 +271,107 @@ export default function ItemModal() {
             keyboardType="numeric"
           />
 
-    <Text style={styles.label}>Hub and Location</Text>
-    <View style={styles.row}>
-    <TouchableOpacity 
-        style={[
-        styles.pickerButton, 
-        styles.halfWidth,
-        selectedHubId && { 
-            borderColor: hubs.find(h => h.id === selectedHubId)?.color || Colours.header_colour, 
-            borderWidth: 2 
-        }
-        ]}
-        onPress={() => {
-        setShowLocationPicker(false);
-        setShowHubPicker(!showHubPicker);
-        }}
-    >
-        <Text style={styles.pickerButtonText}>{getSelectedHubName()}</Text>
-        <AntDesign name={showHubPicker ? "up" : "down"} size={16} color="white" />
-    </TouchableOpacity>
-
-    <TouchableOpacity 
-        style={[
-        styles.pickerButton,
-        styles.halfWidth,
-        !selectedHubId && styles.disabledPickerButton
-        ]}
-        onPress={() => {
-        if (selectedHubId) {
-            setShowHubPicker(false);
-            setShowLocationPicker(!showLocationPicker);
-        }
-        }}
-        disabled={!selectedHubId}
-    >
-        <Text style={styles.pickerButtonText}>{getSelectedLocationName()}</Text>
-        <AntDesign name={showLocationPicker ? "up" : "down"} size={16} color="white" />
-    </TouchableOpacity>
-    </View>
-
-    {showHubPicker && (
-    <View style={styles.pickerContainer}>
-        <Picker
-        selectedValue={selectedHubId}
-        onValueChange={(itemValue) => {
-            setSelectedHubId(itemValue);
-            setSelectedLocationId('');
-            setShowHubPicker(false);
-        }}
-        style={styles.picker}
-        dropdownIconColor="white"
-        >
-        <Picker.Item label="-SELECT A HUB-" value="" />
-        {hubs.map(hub => (
-            <Picker.Item 
-            key={hub.id} 
-            label={hub.name} 
-            value={hub.id} 
+          {/* Categories FlatList */}
+          <Text style={styles.label}>Categories</Text>
+          {categories.length > 0 ? (
+            <FlatList
+              data={categories}
+              renderItem={renderCategoryItem}
+              keyExtractor={(item) => item.id}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.categoriesList}
             />
-        ))}
-        </Picker>
-    </View>
-    )}
+          ) : (
+            <Text style={styles.noCategoriesText}>No categories available</Text>
+          )}
 
-    {showLocationPicker && selectedHubId && (
-    <View style={styles.pickerContainer}>
-        <Picker
-        selectedValue={selectedLocationId}
-        onValueChange={(itemValue) => {
-            setSelectedLocationId(itemValue);
-            setShowLocationPicker(false);
-        }}
-        style={styles.picker}
-        dropdownIconColor="white"
-        >
-        <Picker.Item label="-SELECT A LOCATION-" value="" />
-        {locations.map(location => (
-            <Picker.Item 
-            key={location.id} 
-            label={location.name} 
-            value={location.id} 
-            />
-        ))}
-        </Picker>
-    </View>
-    )}
-    </View>
+          <Text style={styles.label}>Hub and Location</Text>
+          <View style={styles.row}>
+            <TouchableOpacity 
+              style={[
+                styles.pickerButton, 
+                styles.halfWidth,
+                selectedHubId && { 
+                  borderColor: hubs.find(h => h.id === selectedHubId)?.color || Colours.header_colour, 
+                  borderWidth: 2 
+                }
+              ]}
+              onPress={() => {
+                setShowLocationPicker(false);
+                setShowHubPicker(!showHubPicker);
+              }}
+            >
+              <Text style={styles.pickerButtonText}>{getSelectedHubName()}</Text>
+              <AntDesign name={showHubPicker ? "up" : "down"} size={16} color="white" />
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={[
+                styles.pickerButton,
+                styles.halfWidth,
+                !selectedHubId && styles.disabledPickerButton
+              ]}
+              onPress={() => {
+                if (selectedHubId) {
+                  setShowHubPicker(false);
+                  setShowLocationPicker(!showLocationPicker);
+                }
+              }}
+              disabled={!selectedHubId}
+            >
+              <Text style={styles.pickerButtonText}>{getSelectedLocationName()}</Text>
+              <AntDesign name={showLocationPicker ? "up" : "down"} size={16} color="white" />
+            </TouchableOpacity>
+          </View>
+
+          {showHubPicker && (
+            <View style={styles.pickerContainer}>
+              <Picker
+                selectedValue={selectedHubId}
+                onValueChange={(itemValue) => {
+                  setSelectedHubId(itemValue);
+                  setSelectedLocationId('');
+                  setShowHubPicker(false);
+                }}
+                style={styles.picker}
+                dropdownIconColor="white"
+              >
+                <Picker.Item label="-SELECT A HUB-" value="" />
+                {hubs.map(hub => (
+                  <Picker.Item 
+                    key={hub.id} 
+                    label={hub.name} 
+                    value={hub.id} 
+                  />
+                ))}
+              </Picker>
+            </View>
+          )}
+
+          {showLocationPicker && selectedHubId && (
+            <View style={styles.pickerContainer}>
+              <Picker
+                selectedValue={selectedLocationId}
+                onValueChange={(itemValue) => {
+                  setSelectedLocationId(itemValue);
+                  setShowLocationPicker(false);
+                }}
+                style={styles.picker}
+                dropdownIconColor="white"
+              >
+                <Picker.Item label="-SELECT A LOCATION-" value="" />
+                {locations.map(location => (
+                  <Picker.Item 
+                    key={location.id} 
+                    label={location.name} 
+                    value={location.id} 
+                  />
+                ))}
+              </Picker>
+            </View>
+          )}
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -328,7 +397,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: Colours.primary_colour,
     marginLeft: 10,
-    
     flex: 1,
   },
   formContainer: {
@@ -357,7 +425,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderWidth: 0, // Remove default border
+    borderWidth: 0,
   },
   disabledPickerButton: {
     opacity: 0.6,
@@ -369,7 +437,7 @@ const styles = StyleSheet.create({
   pickerContainer: {
     backgroundColor: Colours.header_colour,
     borderRadius: 10,
-    marginTop: 5, // Adjust spacing between button and dropdown
+    marginTop: 5,
     marginBottom: 15,
     overflow: 'hidden',
   },
@@ -393,5 +461,33 @@ const styles = StyleSheet.create({
   },
   halfWidth: {
     flex: 0.48,
+  },
+  // New styles for categories
+  categoriesList: {
+    paddingBottom: 10,
+  },
+  categoryPill: {
+    backgroundColor: Colours.header_colour,
+    borderRadius: 20,
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    marginRight: 10,
+    marginBottom: 15,
+  },
+  selectedCategoryPill: {
+    backgroundColor: Colours.tertiary_colour,
+  },
+  categoryPillText: {
+    color: 'white',
+    fontSize: 14,
+  },
+  selectedCategoryPillText: {
+    color: 'black',
+    fontWeight: 'bold',
+  },
+  noCategoriesText: {
+    color: '#aaa',
+    marginBottom: 15,
+    fontStyle: 'italic',
   },
 });

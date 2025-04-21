@@ -82,31 +82,31 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   box: {
-    width: '30%', // Evenly spaced (3 boxes)
-    aspectRatio: 1, // Square shape
+    width: '30%',
+    aspectRatio: 1,
     backgroundColor: Colours.header_colour,
     borderRadius: 20,
-    justifyContent: 'flex-start', // Align items to the top
-    alignItems: 'flex-start', // Align items to the left
+    justifyContent: 'flex-start',
+    alignItems: 'flex-start',
     padding: 10,
   },
   boxIcon: {
-    marginBottom: 10, // Space between icon and number
-    marginLeft: 2, // Align icon to the left
-    marginTop: 3, // Align icon to the top
+    marginBottom: 10,
+    marginLeft: 2,
+    marginTop: 3,
     
   },
   boxValue: {
     color: 'white',
     fontSize: 20,
     fontWeight: 'bold',
-    textAlign: 'left', // Align text to the left
-    marginBottom: 5, // Space between number and text
+    textAlign: 'left',
+    marginBottom: 5,
   },
   boxText: {
     color: 'white',
     fontSize: 14,
-    textAlign: 'left', // Align text to the left
+    textAlign: 'left',
   },
   title: {
     fontSize: 20,
