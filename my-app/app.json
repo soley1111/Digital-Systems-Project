@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "scheme": "acme",
+    "plugins": [
+      "expo-router"
+    ],
+    "name": "my-app",
+    "slug": "my-app",
+    "newArchEnabled": true,
+    "orientation": "portrait"
+  }
+}
