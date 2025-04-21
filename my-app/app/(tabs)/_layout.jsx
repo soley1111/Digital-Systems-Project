@@ -5,6 +5,7 @@ import AntDesign from '@expo/vector-icons/AntDesign';
 import Feather from '@expo/vector-icons/Feather';
 import Colours from '../../constant/Colours';
 import { Link } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 
 export default function TabLayout() {
   return (
@@ -43,7 +44,7 @@ export default function TabLayout() {
           headerTitle: 'INVENTORY',
           headerRight: () => (
             <Link href="/itemModal" push asChild>
-              <TouchableOpacity>
+              <TouchableOpacity onPress = { ()=> {Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}} >
               <Feather name="plus" size={24} color="#f9f9f9" style={{ marginRight: 15 }} />
             </TouchableOpacity>
             </Link>

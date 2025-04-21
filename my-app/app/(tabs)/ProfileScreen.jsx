@@ -12,6 +12,7 @@ import ProfileImage from '../../components/ProfileImage';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import { Link } from 'expo-router';
 import { Switch } from 'react-native';
+import * as Haptics from 'expo-haptics';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -29,14 +30,32 @@ export default function ProfileScreen() {
 
   // Function to handle sign out
   const handleSignOut = () => {
-    signOut(auth)
-      .then(() => {
-        console.log('User signed out!');
-        router.replace('(login)');
-      })
-      .catch((error) => {
-        console.error('Error signing out: ', error);
-      });
+    Alert.alert(
+      'Confirm Sign Out',
+      'Are you sure you want to sign out?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Sign Out',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await signOut(auth);
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+              console.log('User signed out!');
+              router.replace('(login)');
+            } catch (error) {
+              console.error('Error signing out: ', error);
+              Alert.alert('Error', 'Failed to sign out. Please try again.');
+            }
+          },
+        },
+      ],
+      { cancelable: true }
+    );
   };
 
   // Function to handle account deletion
@@ -85,9 +104,12 @@ export default function ProfileScreen() {
         </View>
       </View>
       <View style={styles.logOutButtonContainer}>
-        <TouchableOpacity style={styles.logOutButton} onPress={handleSignOut}>
+        <TouchableOpacity style={styles.logOutButton} onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); // Add haptic feedback
+          handleSignOut(); // Existing delete functionality
+        }}>
           <Feather name="log-out" size={18} color="white" style={styles.logOutIcon} />
-          <Text style={styles.logOutButtonText}>Logout</Text>
+          <Text style={styles.logOutButtonText}>Sign Out</Text>
         </TouchableOpacity>
       </View>
       <View style={styles.settingsLabelContainer}>
@@ -98,6 +120,12 @@ export default function ProfileScreen() {
           <Feather name="home" size={20} color="white" style={styles.settingIcon} />
           <Text style={styles.settingText}>My Hubs</Text>
         </TouchableOpacity>
+        <Link href="/categoryModal" push asChild>
+            <TouchableOpacity style={styles.settingItem}>
+              <Feather name="folder" size={20} color="white" style={styles.settingIcon} />
+              <Text style={styles.settingText}>My Categories</Text>
+            </TouchableOpacity>
+        </Link>
         <View style={styles.settingItem}>
           <Feather name="bell" size={20} color="white" style={styles.settingIcon} />
           <Text style={styles.settingText}>Notifications</Text>

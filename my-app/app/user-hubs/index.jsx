@@ -8,6 +8,7 @@ import { db, auth } from '../../config/firebaseConfig';
 import Feather from '@expo/vector-icons/Feather';
 import { Link } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
+import * as Haptics from 'expo-haptics';
 
 export default function UserHubsPage() {
   const [hubs, setHubs] = useState([]);
@@ -59,6 +60,7 @@ export default function UserHubsPage() {
   );
 
   const onRefresh = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setRefreshing(true);
     await fetchHubs();
     setRefreshing(false);
@@ -85,13 +87,16 @@ export default function UserHubsPage() {
           locations: JSON.stringify(item.locationNames || []),
           isEdit: "true"
         }
-      }} push asChild>
-        <TouchableOpacity style={styles.editIcon}>
+      }} push asChild >
+        <TouchableOpacity style={styles.editIcon} onPress = { ()=> {Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}} >
           <AntDesign name="edit" size={20} color="white" />
         </TouchableOpacity>
       </Link>
 
-      <TouchableOpacity onPress={() => deleteHub(item.id)}>
+      <TouchableOpacity onPress={() => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        deleteHub(item.id);
+      }} >
         <AntDesign name="delete" size={20} color="white" />
       </TouchableOpacity>
     </View>
@@ -135,6 +140,7 @@ export default function UserHubsPage() {
               
               await batch.commit();
               setHubs(hubs.filter(hub => hub.id !== hubId));
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
               Alert.alert('Success', 'Hub deleted successfully');
             },
             style: 'destructive',
@@ -142,6 +148,7 @@ export default function UserHubsPage() {
         ]
       );
     } catch (error) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       console.error('Error deleting hub:', error);
       Alert.alert('Error', 'Failed to delete hub');
     }
@@ -152,7 +159,7 @@ export default function UserHubsPage() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
+        <TouchableOpacity onPress={() => {router.back()}} >
           <AntDesign name="arrowleft" size={24} color="white" />
         </TouchableOpacity>
         <Text style={styles.title}>My Hubs</Text>
@@ -163,7 +170,7 @@ export default function UserHubsPage() {
             isEdit: "false"
           }
         }} push asChild>
-          <TouchableOpacity>
+          <TouchableOpacity onPress = { ()=> {Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}} >
             <Feather name="plus" size={24} color="#f9f9f9" style={{ marginRight: 10 }} />
           </TouchableOpacity>
         </Link>

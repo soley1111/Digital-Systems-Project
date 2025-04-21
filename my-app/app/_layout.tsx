@@ -26,6 +26,11 @@ export default function RootLayout() {
             headerShown: false,
           }}  
           />
+          <Stack.Screen name="categoryModal" options= {{
+          presentation: "modal",
+          headerShown: false,
+          }}
+          />
         </Stack>
       </UserDetailContext.Provider>
     </GestureHandlerRootView>

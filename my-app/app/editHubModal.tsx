@@ -1,15 +1,35 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet,
-ScrollView, Alert, KeyboardAvoidingView, Platform, Keyboard, ActivityIndicator } from 'react-native';
-import { AntDesign } from '@expo/vector-icons';
+import { 
+  View, 
+  Text, 
+  TextInput, 
+  TouchableOpacity, 
+  StyleSheet, 
+  ScrollView, 
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ActivityIndicator,
+  FlatList
+} from 'react-native';
+import { AntDesign, Feather } from '@expo/vector-icons';
 import Colours from '../constant/Colours';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { setDoc, doc, updateDoc, arrayUnion, serverTimestamp, writeBatch,
-collection, getDocs, query, where } from 'firebase/firestore';
+import { 
+  setDoc, 
+  doc, 
+  updateDoc, 
+  arrayUnion, 
+  serverTimestamp, 
+  writeBatch,
+  collection, 
+  getDocs, 
+  query, 
+  where 
+} from 'firebase/firestore';
 import { db, auth } from '../config/firebaseConfig';
+import * as Haptics from 'expo-haptics';
 
-
-// This is a list of colors for the color picker - store these in constants
 const colorOptions = [
   '#FF0000', '#FF3300', '#FF6600', '#FF9900', '#FFCC00',
   '#FFFF00', '#CCFF00', '#99FF00', '#66FF00', '#33FF00',
@@ -27,6 +47,7 @@ export default function EditHubModal() {
   const params = useLocalSearchParams();
   const isEdit = params.isEdit === 'true';
   const hubId = params.hubId as string;
+  const router = useRouter();
   
   const [hubName, setHubName] = useState(isEdit ? params.hubName as string : '');
   const [location, setLocation] = useState('');
@@ -34,14 +55,10 @@ export default function EditHubModal() {
   const [selectedColor, setSelectedColor] = useState(isEdit ? params.hubColor as string : colorOptions[0]);
   const [existingLocationDocs, setExistingLocationDocs] = useState<LocationDoc[]>([]);
   const [loading, setLoading] = useState(false);
-  const [editingLocationIndex, setEditingLocationIndex] = useState<number | null>(null);
-  const [editingLocationText, setEditingLocationText] = useState('');
-  const router = useRouter();
+  const [deletes, setDeletes] = useState<Set<number>>(new Set()); // Changed to track indices
+  const [isChanged, setIsChanged] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
 
-
-  // This effect runs when the component mounts and when isEdit or hubId changes
-  // It fetches the existing locations for the hub if in edit mode
   useEffect(() => {
     if (!isEdit) return;
 
@@ -66,19 +83,15 @@ export default function EditHubModal() {
     fetchLocations();
   }, [isEdit, hubId]);
 
-  const scrollToInput = (reactNode: any) => {
-    reactNode?.measure((x, y, width, height, pageX, pageY) => {
-      scrollViewRef.current?.scrollTo({ y: pageY - 100, animated: true });
-    });
-  };
-
   const saveHub = async () => {
     if (hubName.trim() === '') {
       Alert.alert('Error', 'Please provide a hub name');
       return;
     }
 
-    if (locations.length === 0) {
+    // Filter out deleted locations before checking if any remain
+    const remainingLocations = locations.filter((_, index) => !deletes.has(index));
+    if (remainingLocations.length === 0) {
       Alert.alert('Error', 'Please add at least one location');
       return;
     }
@@ -98,7 +111,7 @@ export default function EditHubModal() {
           updatedAt: serverTimestamp()
         });
 
-        // 2. Get current locations to compare
+        // 2. Handle locations
         const currentLocationsQuery = query(
           collection(db, 'locations'),
           where('hubId', '==', hubId)
@@ -109,10 +122,9 @@ export default function EditHubModal() {
           name: doc.data().name
         }));
 
-        // 3. Handle locations:
-        // a. Find locations that were removed
+        // a. Find locations that were removed (either deleted or renamed)
         const removedLocations = currentLocations.filter(
-          loc => !locations.includes(loc.name)
+          loc => !remainingLocations.includes(loc.name)
         );
         
         // b. Delete removed locations
@@ -122,7 +134,7 @@ export default function EditHubModal() {
 
         // c. Find new locations that need to be added
         const existingLocationNames = currentLocations.map(loc => loc.name);
-        const newLocations = locations.filter(
+        const newLocations = remainingLocations.filter(
           loc => !existingLocationNames.includes(loc)
         );
 
@@ -142,7 +154,7 @@ export default function EditHubModal() {
 
         // e. Update hub's locations array
         const remainingLocationIds = currentLocations
-          .filter(loc => locations.includes(loc.name))
+          .filter(loc => remainingLocations.includes(loc.name))
           .map(loc => loc.id);
         
         batch.update(hubRef, {
@@ -150,9 +162,11 @@ export default function EditHubModal() {
         });
 
         await batch.commit();
-        Alert.alert('Success', 'Hub updated successfully!');
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       } else {
-        // Create new hub
+        // Create new hub - filter out any locations marked for deletion before saving
+        const locationsToSave = locations.filter((_, index) => !deletes.has(index));
+        
         const batch = writeBatch(db);
         
         // 1. Create hub document
@@ -167,7 +181,7 @@ export default function EditHubModal() {
 
         // 2. Create location documents
         const locationIds = [];
-        for (const locName of locations) {
+        for (const locName of locationsToSave) {
           const locRef = doc(collection(db, 'locations'));
           batch.set(locRef, {
             name: locName,
@@ -191,13 +205,14 @@ export default function EditHubModal() {
         });
 
         await batch.commit();
-        Alert.alert('Success', 'Hub created successfully!');
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
       
       router.back();
     } catch (error) {
       console.error("Error saving hub:", error);
       Alert.alert('Error', 'Failed to save hub. Please try again.');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setLoading(false);
     }
@@ -205,7 +220,10 @@ export default function EditHubModal() {
 
   const addLocation = () => {
     const trimmedLocation = location.trim();
-    if (!trimmedLocation) return;
+    if (!trimmedLocation) {
+      Alert.alert('Error', 'Please enter a location name');
+      return;
+    }
     
     if (locations.includes(trimmedLocation)) {
       Alert.alert('Error', 'This location already exists');
@@ -214,84 +232,55 @@ export default function EditHubModal() {
     
     setLocations([...locations, trimmedLocation]);
     setLocation('');
+    setIsChanged(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
-  const removeLocation = (index: number) => {
-    const updatedLocations = [...locations];
-    updatedLocations.splice(index, 1);
-    setLocations(updatedLocations);
-    if (editingLocationIndex === index) {
-      cancelEditingLocation();
-    }
-  };
-
-  const startEditingLocation = (index: number) => {
-    setEditingLocationIndex(index);
-    setEditingLocationText(locations[index]);
-  };
-
-  const saveEditedLocation = () => {
-    if (editingLocationIndex === null) return;
-    
-    const trimmedText = editingLocationText.trim();
-    if (!trimmedText) {
-      Alert.alert('Error', 'Location name cannot be empty');
-      return;
-    }
-    
-    if (locations.includes(trimmedText) && locations[editingLocationIndex] !== trimmedText) {
-      Alert.alert('Error', 'This location already exists');
-      return;
-    }
+  const updateLocation = (index: number, newName: string) => {
+    if (!newName.trim()) return;
     
     const updatedLocations = [...locations];
-    updatedLocations[editingLocationIndex] = trimmedText;
+    updatedLocations[index] = newName.trim();
     setLocations(updatedLocations);
-    cancelEditingLocation();
+    setIsChanged(true);
   };
 
-  const cancelEditingLocation = () => {
-    setEditingLocationIndex(null);
-    setEditingLocationText('');
+  const markForDeletion = (index: number) => {
+    const newDeletes = new Set(deletes);
+    if (newDeletes.has(index)) {
+      newDeletes.delete(index);
+    } else {
+      newDeletes.add(index);
+    }
+    setDeletes(newDeletes);
+    setIsChanged(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
   const renderLocation = ({ item, index }: { item: string, index: number }) => (
-    <View style={styles.locationItem}>
-      {editingLocationIndex === index ? (
-        <View style={styles.editContainer}>
-          <TextInput
-            style={styles.editInput}
-            value={editingLocationText}
-            onChangeText={setEditingLocationText}
-            autoFocus
-            onSubmitEditing={saveEditedLocation}
-            returnKeyType="done"
-            onFocus={(e) => {
-              scrollToInput(e.target);
-            }}
-          />
-          <View style={styles.editButtons}>
-            <TouchableOpacity onPress={saveEditedLocation}>
-              <Text style={styles.saveText}>Save</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={cancelEditingLocation}>
-              <Text style={styles.cancelText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      ) : (
-        <>
-          <TouchableOpacity 
-            style={{ flex: 1 }} 
-            onPress={() => startEditingLocation(index)}
-          >
-            <Text style={styles.locationText}>{item}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => removeLocation(index)}>
-            <AntDesign name="delete" size={20} color="white" />
-          </TouchableOpacity>
-        </>
-      )}
+    <View style={[
+      styles.categoryItem,
+      deletes.has(index) && styles.deletedItem
+    ]}>
+      <TextInput
+        style={[
+          styles.categoryInput,
+          deletes.has(index) && styles.strikethroughText
+        ]}
+        value={item}
+        onChangeText={(text) => updateLocation(index, text)}
+        editable={!deletes.has(index)}
+      />
+      <TouchableOpacity 
+        onPress={() => markForDeletion(index)}
+        style={styles.deleteButton}
+      >
+        <AntDesign 
+          name={deletes.has(index) ? "closecircleo" : "closecircle"} 
+          size={18} 
+          color={deletes.has(index) ? Colours.tertiary_colour : '#ccc'} 
+        />
+      </TouchableOpacity>
     </View>
   );
 
@@ -301,35 +290,46 @@ export default function EditHubModal() {
       style={styles.container}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
     >
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()}>
+          <AntDesign name="down" size={24} color="white" />
+        </TouchableOpacity>
+        <Text style={styles.title}>{isEdit ? 'EDIT HUB' : 'CREATE HUB'}</Text>
+        <TouchableOpacity 
+          onPress={saveHub}
+          disabled={(!isChanged && deletes.size === 0) || loading}
+          style={styles.saveButton}
+        >
+          <Text style={[
+            styles.saveButtonText,
+            (!isChanged && deletes.size === 0) && { opacity: 0.5 }
+          ]}>
+            Save
+          </Text>
+        </TouchableOpacity>
+      </View>
+
       <ScrollView
         ref={scrollViewRef}
         contentContainerStyle={styles.scrollContainer}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <AntDesign name="down" size={24} color="white" />
-          </TouchableOpacity>
-          <Text style={styles.title}>{isEdit ? 'EDIT HUB' : 'CREATE HUB'}</Text>
-          <TouchableOpacity 
-          onPress={saveHub} 
-          disabled={loading} 
-          style={styles.confirmHeaderButton}
-        >
-          <Text style={styles.confirmHeaderText}>SAVE</Text>
-        </TouchableOpacity>
-        </View>
-        
-        <View style={styles.formContainer}>
+        {/* Hub name and color */}
+        <View style={styles.addContainer}>
           <Text style={styles.label}>Hub Name</Text>
           <TextInput
-            style={[styles.hubNameInput, { borderColor: selectedColor, borderWidth: 2 }]}
+            style={[styles.input, { borderColor: selectedColor, borderWidth: 2 }]}
             placeholder="House, Office, etc."
             placeholderTextColor="#ccc"
             value={hubName}
-            onChangeText={setHubName}
+            onChangeText={(text) => {
+              setHubName(text);
+              setIsChanged(true);
+            }}
           />
+        </View>
 
+        <View style={styles.addContainer}>
           <Text style={styles.label}>Color</Text>
           <ScrollView 
             horizontal 
@@ -347,16 +347,23 @@ export default function EditHubModal() {
                     borderColor: selectedColor === color ? 'white' : 'transparent',
                   },
                 ]}
-                onPress={() => setSelectedColor(color)}
+                onPress={() => {
+                  setSelectedColor(color);
+                  setIsChanged(true);
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                }}
               />
             ))}
           </ScrollView>
+        </View>
 
-          <Text style={styles.label}>Locations</Text>
-          <View style={styles.locationInputContainer}>
+        {/* Add new location */}
+        <View style={styles.addContainer}>
+          <Text style={styles.label}>Add New Location</Text>
+          <View style={styles.inputRow}>
             <TextInput
-              style={[styles.input, { flex: 1 }]}
-              placeholder="Enter location"
+              style={styles.input}
+              placeholder="Location name"
               placeholderTextColor="#ccc"
               value={location}
               onChangeText={setLocation}
@@ -364,25 +371,30 @@ export default function EditHubModal() {
               returnKeyType="done"
             />
             <TouchableOpacity 
-              style={styles.addLocationButton} 
+              style={styles.addButton}
               onPress={addLocation}
               disabled={!location.trim()}
             >
-              <AntDesign name="plus" size={24} color="white" />
+              <Feather name="plus" size={20} color="white" />
             </TouchableOpacity>
           </View>
         </View>
 
-        <FlatList
-          data={locations}
-          renderItem={renderLocation}
-          keyExtractor={(item, index) => index.toString()}
-          contentContainerStyle={styles.listContainer}
-          ListEmptyComponent={
-            <Text style={styles.emptyText}>No locations added yet</Text>
-          }
-          scrollEnabled={false}
-        />
+        {/* Locations list */}
+        <Text style={styles.label}>Your Locations</Text>
+        {loading ? (
+          <ActivityIndicator size="large" color={Colours.primary_colour} />
+        ) : (
+          <FlatList
+            data={locations}
+            renderItem={renderLocation}
+            keyExtractor={(item, index) => index.toString()}
+            scrollEnabled={false}
+            ListEmptyComponent={
+              <Text style={styles.emptyText}>No locations yet</Text>
+            }
+          />
+        )}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -395,86 +407,87 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     padding: 20,
-    paddingTop: 25,
-    paddingBottom: 0,
+    paddingTop: 10,
+    paddingBottom: 40,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
+    padding: 20,
+    paddingBottom: 10,
   },
   title: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
     color: Colours.primary_colour,
-    marginLeft: 10,
     textAlign: 'center',
+    paddingLeft: 10,
   },
-  formContainer: {
-    marginBottom: 15,
+  saveButton: {
+    paddingHorizontal: 10,
+    marginLeft: 'auto',
+  },
+  saveButtonText: {
+    color: Colours.tertiary_colour,
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  addContainer: {
+    marginBottom: 20,
   },
   label: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     color: 'white',
     marginBottom: 8,
     marginLeft: 5,
   },
-  hubNameInput: {
-    backgroundColor: Colours.header_colour,
-    borderRadius: 10,
-    padding: 15,
-    marginBottom: 15,
-    color: 'white',
-    fontSize: 16,
-  },
-  colorPicker: {
-    marginBottom: 15,
-  },
-  colorCircle: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    marginHorizontal: 5,
-    borderWidth: 3,
-  },
-  locationInputContainer: {
+  inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
   },
   input: {
     backgroundColor: Colours.header_colour,
     borderRadius: 10,
-    padding: 15,
+    padding: 12,
     color: 'white',
     fontSize: 16,
     flex: 1,
+    marginRight: 10,
   },
-  addLocationButton: {
+  addButton: {
     backgroundColor: Colours.tertiary_colour,
+    width: 44,
+    height: 44,
     borderRadius: 10,
-    width: 50,
-    height: 50,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  listContainer: {
-    flexGrow: 1,
-  },
-  locationItem: {
+  categoryItem: {
     backgroundColor: Colours.header_colour,
-    padding: 15,
     borderRadius: 10,
-    marginBottom: 10,
+    padding: 12,
+    marginBottom: 8,
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    minHeight: 50,
   },
-  locationText: {
+  deletedItem: {
+    opacity: 0.6,
+  },
+  categoryInput: {
+    flex: 1,
     color: 'white',
     fontSize: 16,
+    paddingVertical: 2,
+  },
+  strikethroughText: {
+    textDecorationLine: 'line-through',
+    textDecorationStyle: 'solid',
+    textDecorationColor: '#ccc',
+  },
+  deleteButton: {
+    marginLeft: 10,
+    padding: 5,
   },
   emptyText: {
     color: '#aaa',
@@ -482,59 +495,14 @@ const styles = StyleSheet.create({
     marginTop: 20,
     fontSize: 16,
   },
-  confirmButton: {
-    backgroundColor: Colours.tertiary_colour,
-    borderRadius: 10,
-    padding: 15,
-    alignItems: 'center',
-    marginTop: 15,
-    marginBottom: 15,
+  colorPicker: {
+    marginBottom: 0,
   },
-  disabledButton: {
-    opacity: 0.7,
-  },
-  addButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  editContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  editInput: {
-    flex: 1,
-    backgroundColor: Colours.header_colour,
-    color: 'white',
-    padding: 0,
-    borderRadius: 5,
-    marginRight: 0,
-    fontSize: 16,
-    minHeight: 40,
-  },
-  editButtons: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  saveText: {
-    color: Colours.tertiary_colour,
-    fontWeight: 'bold',
-    fontSize: 14,
-  },
-  cancelText: {
-    color: '#ccc',
-    fontWeight: 'bold',
-    fontSize: 14,
-  },
-  confirmHeaderButton: {
-    marginLeft: 'auto',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-  },
-  confirmHeaderText: {
-    color: Colours.tertiary_colour,
-    fontWeight: 'bold',
-    fontSize: 16,
+  colorCircle: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    marginHorizontal: 5,
+    borderWidth: 3,
   },
 });

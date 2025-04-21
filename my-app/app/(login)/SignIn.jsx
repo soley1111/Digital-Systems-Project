@@ -11,6 +11,7 @@ import { UserDetailContext } from '../../context/userDetailContext';
 import { Modal } from '../../components/Modal';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import Feather from '@expo/vector-icons/Feather';
+import * as Haptics from 'expo-haptics';
 
 // SIGN IN SCREEN
 // COMPLETED
@@ -66,6 +67,7 @@ export default function SignIn() {
     signInWithEmailAndPassword(auth, email, password)
       .then(async () => {
         console.log('User signed in!');
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         await getUserDetails();
         setLoading(false);
         router.replace('(tabs)');
@@ -89,6 +91,7 @@ export default function SignIn() {
           default:
             error = 'An error occurred. Please try again.';
         }
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         setErrorMessage(error);
         setLoading(false);
       });

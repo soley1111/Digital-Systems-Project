@@ -10,6 +10,7 @@ import { userDetailContext } from '../../context/userDetailContext';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import Feather from '@expo/vector-icons/Feather';
 import { Alert } from 'react-native';
+import * as Haptics from 'expo-haptics';
 
 // SIGN UP SCREEN
 
@@ -40,6 +41,7 @@ export default function SignUp() {
       })
       .catch((e) => {
         console.log(e.message);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         let error = '';
 
         switch (e.code) {
@@ -74,6 +76,7 @@ export default function SignUp() {
     };
 
     await setDoc(doc(db, 'users', email), data);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     Alert.alert('Success', 'Account created successfully, please sign in.');
 
     setUserDetail(data);

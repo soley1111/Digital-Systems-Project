@@ -183,11 +183,7 @@ export default function ItemModal() {
             disabled={loading} 
             style={styles.confirmHeaderButton}
           >
-            {loading ? (
-              <ActivityIndicator color="white" />
-            ) : (
-              <Text style={styles.confirmHeaderText}>SAVE</Text>
-            )}
+            <Text style={styles.confirmHeaderText}>SAVE</Text>
           </TouchableOpacity>
         </View>
         
