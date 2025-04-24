@@ -45,12 +45,17 @@ interface Category {
   name: string;
 }
 
+
+// ItemModal screen for creating a new item
+
+// Add SKU and QR code fields if needed
+
 export default function ItemModal() {
   const router = useRouter();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [quantity, setQuantity] = useState('1');
-  const [qrCode, setQrCode] = useState('');
+  
   const [loading, setLoading] = useState(false);
   const [hubs, setHubs] = useState<Hub[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
@@ -167,10 +172,9 @@ export default function ItemModal() {
         name: name.trim(),
         description: description.trim(),
         quantity: quantityNum,
-        qrCode: qrCode.trim(),
         locationId: selectedLocationId,
         hubId: selectedHubId,
-        categories: selectedCategories, // Save selected category IDs
+        categories: selectedCategories,
         owner: auth.currentUser?.email,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
@@ -462,7 +466,6 @@ const styles = StyleSheet.create({
   halfWidth: {
     flex: 0.48,
   },
-  // New styles for categories
   categoriesList: {
     paddingBottom: 10,
   },
@@ -482,7 +485,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   selectedCategoryPillText: {
-    color: 'black',
+    color: '#ccc',
     fontWeight: 'bold',
   },
   noCategoriesText: {
