@@ -16,6 +16,7 @@ import Colours from '../../constant/Colours';
 import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db, auth } from '../../config/firebaseConfig';
 import * as Haptics from 'expo-haptics';
+import { Link } from 'expo-router';
 
 export default function InventoryScreen() {
   const navigation = useNavigation();
@@ -226,11 +227,30 @@ export default function InventoryScreen() {
     <View style={styles.itemContainer}>
       <View style={[styles.colorStrip, { backgroundColor: item.hubColor }]} />
       <View style={styles.itemContent}>
-        <Text style={styles.itemName}>{item.name}</Text>
+        <View style={styles.itemHeader}>
+          <Text style={styles.itemName}>{item.name}</Text>
+          <Link href={{
+            pathname: "/editItemModal",
+            params: { 
+              itemId: item.id
+            }
+          }} push asChild>
+            <TouchableOpacity 
+              onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
+              style={styles.editButton}
+            >
+              <Feather name="edit-2" size={20} color={Colours.tertiary_colour} />
+            </TouchableOpacity>
+          </Link>
+        </View>
+        
         <View style={styles.itemDetails}>
-          <Text style={styles.itemDetail}>Qty: {item.quantity}</Text>
-          <Text style={styles.itemDetail}>{item.hub}</Text>
-          <Text style={styles.itemDetail}>{item.location}</Text>
+          <View style={styles.quantityContainer}>
+            <Text style={styles.quantityText}>{item.quantity}</Text>
+          </View>
+          <Text style={styles.locationText}>
+            {item.hub.toUpperCase()}/{item.location}
+          </Text>
         </View>
       </View>
     </View>
@@ -328,7 +348,7 @@ export default function InventoryScreen() {
             />
             {searchQuery ? (
               <TouchableOpacity onPress={clearSearch} style={styles.clearButton}>
-                <AntDesign name="close" size={16} color="#ccc" />
+                <AntDesign name="closecircle" size={16} color="#ccc" />
               </TouchableOpacity>
             ) : null}
           </View>
@@ -593,25 +613,42 @@ const styles = StyleSheet.create({
   itemContainer: {
     flexDirection: 'row',
     backgroundColor: Colours.header_colour,
-    marginBottom: 8,
-    borderRadius: 8,
+    marginBottom: 12,
+    borderRadius: 10,
     overflow: 'hidden',
+    paddingRight: 8,
   },
   colorStrip: {
     width: 6,
   },
   itemContent: {
     flex: 1,
-    padding: 16,
+    padding: 14,
+  },
+  itemHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
   },
   itemName: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
     color: 'white',
-    marginBottom: 8,
+    flex: 1,
+    paddingRight: 10,
+  },
+  editButton: {
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 20,
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   itemDetails: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
   },
   itemDetail: {
@@ -623,5 +660,21 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 20,
     fontSize: 16,
+  },
+  quantityContainer: {
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  quantityText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colours.tertiary_colour,
+  },
+  locationText: {
+    fontSize: 13,
+    color: '#aaa',
+    letterSpacing: 0.5,
   },
 });
