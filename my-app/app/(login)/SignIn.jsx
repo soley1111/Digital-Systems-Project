@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useRef } from 'react';
 import { getAuth, sendPasswordResetEmail } from 'firebase/auth';
 import Colours from '../../constant/Colours';
 import { useRouter } from 'expo-router';
@@ -8,25 +8,24 @@ import { auth } from '../../config/firebaseConfig';
 import { getDoc, doc } from 'firebase/firestore';
 import { db } from '../../config/firebaseConfig';
 import { UserDetailContext } from '../../context/userDetailContext';
-import { Modal } from '../../components/Modal';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import Feather from '@expo/vector-icons/Feather';
 import * as Haptics from 'expo-haptics';
+import RBSheet from 'react-native-raw-bottom-sheet';
 
 // SIGN IN SCREEN
 // COMPLETED
 
 export default function SignIn() {
   const router = useRouter();
+  const refRBSheet = useRef();
 
   const [email, setEmail] = useState();
   const [password, setPassword] = useState();
   const { userDetail, setUserDetail } = useContext(UserDetailContext);
   const [loading, setLoading] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
-
 
   // Function to send password reset email
   const sendPasswordReset = async (email) => {
@@ -42,6 +41,7 @@ export default function SignIn() {
       const auth = getAuth();
       await sendPasswordResetEmail(auth, email);
       Alert.alert('Success', 'Password reset email sent successfully!');
+      refRBSheet.current.close();
     } catch (error) {
       const errorMessage = error.message;
       console.log(errorMessage);
@@ -49,15 +49,13 @@ export default function SignIn() {
     }
   };
 
-
-  // Function to handle password reset inside modal
+  // Function to handle password reset inside bottom sheet
   const onForgotPassword = () => {
     if (!forgotEmail) {
       Alert.alert('Error', 'Please enter your email address.');
       return;
     }
     sendPasswordReset(forgotEmail);
-    setIsModalOpen(false);
   };
 
   // Function to handle sign-in
@@ -137,7 +135,7 @@ export default function SignIn() {
           </Text>
         </Text>
 
-        <TouchableOpacity onPress={() => setIsModalOpen(true)}>
+        <TouchableOpacity onPress={() => refRBSheet.current.open()}>
           <Text style={styles.forgotPassword}>Forgot Password?</Text>
         </TouchableOpacity>
 
@@ -151,36 +149,76 @@ export default function SignIn() {
         </View>
       </View>
 
-      {/* Forgot Password Modal */}
-      <Modal isOpen={isModalOpen} withInput={true}>
-        <View style={styles.modalContent}>
+      {/* Forgot Password Bottom Sheet */}
+      <RBSheet
+        ref={refRBSheet}
+        height={265}
+        useNativeDriver={false}
+        draggable={false}
+        customStyles={{
+          wrapper: {
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          },
+          draggableIcon: {
+            backgroundColor: '#ccc',
+          },
+          container: {
+            backgroundColor: Colours.bg_colour,
+            borderTopLeftRadius: 20,
+            borderTopRightRadius: 20,
+            padding: 10,
+          },
+        }}
+        customModalProps={{
+          animationType: 'fade',
+          statusBarTranslucent: true,
+        }}
+        customAvoidingViewProps={{
+          enabled: true,
+          behavior: 'padding',
+          keyboardVerticalOffset: -20,
+        }}>
+        <View style={styles.bottomSheetContainer}>
+          <View style={styles.bottomSheetHeader}>
+            <View style={styles.titleContainer}>
+              <Text style={styles.bottomSheetTitle}>Forgot Password</Text>
+            </View>
+            <TouchableOpacity 
+              onPress={() => refRBSheet.current.close()}
+              style={styles.closeButton}
+            >
+              <AntDesign name="close" size={20} color="white" />
+            </TouchableOpacity>
+          </View>
           
-          <TouchableOpacity style={styles.closeButton} onPress={() => setIsModalOpen(false)}>
-            <AntDesign name="close" size={18} color="white" />
-          </TouchableOpacity>
-
-          
-          <Text style={styles.modalTitle}>Forgot Password</Text>
-
-          
-          <Text style={styles.modalDescription}>
-            Enter your email below, and we'll send you a link to reset your password.
-          </Text>
-
-          
-          <TextInput
-            style={styles.modalInput}
-            placeholder="Enter your email"
-            placeholderTextColor="#B0B0B0"
-            onChangeText={(value) => setForgotEmail(value)}
-          />
-
-          
-          <TouchableOpacity style={styles.modalButton} onPress={onForgotPassword}>
-            <Text style={styles.modalButtonText}>Send Reset Link</Text>
-          </TouchableOpacity>
+          <View style={styles.bottomSheetContent}>
+            <Text style={styles.bottomSheetDescription}>
+              Enter your email below, and we'll send you a link to reset your password.
+            </Text>
+            
+            <View style={styles.emailInputContainer}>
+              <TextInput
+                style={styles.emailInput}
+                placeholder="Enter your email"
+                placeholderTextColor="gray"
+                value={forgotEmail}
+                onChangeText={setForgotEmail}
+                autoCapitalize="none"
+              />
+            </View>
+            
+            <TouchableOpacity 
+              style={styles.resetButton}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                onForgotPassword();
+              }}
+            >
+              <Text style={styles.resetButtonText}>Send Reset Link</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </Modal>
+      </RBSheet>
     </View>
   );
 }
@@ -256,50 +294,6 @@ const styles = StyleSheet.create({
     color: Colours.tertiary_colour,
     fontWeight: 'bold',
   },
-  modalContent: {
-    backgroundColor: Colours.bg_colour,
-    padding: 10,
-    borderRadius: 10,
-    width: '100%',
-    position: 'relative',
-  },
-  closeButton: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    zIndex: 1,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 5,
-    color: 'white',
-  },
-  modalInput: {
-    backgroundColor: Colours.header_colour,
-    borderRadius: 10,
-    padding: 15,
-    width: '100%',
-    marginBottom: 15,
-    color: 'white',
-  },
-  modalDescription: {
-    fontSize: 14,
-    color: 'gray',
-    marginBottom: 15,
-  },
-  modalButton: {
-    backgroundColor: Colours.tertiary_colour,
-    borderRadius: 10,
-    padding: 15,
-    width: '100%',
-    alignItems: 'center',
-    marginBottom: 5,
-  },
-  modalButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
   errorHolder: {
     alignItems: 'center',
     marginTop: 10,
@@ -316,5 +310,60 @@ const styles = StyleSheet.create({
     color: 'red',
     fontSize: 14,
     textAlign: 'center',
+  },
+  // Bottom Sheet Styles
+  bottomSheetContainer: {
+    flex: 1,
+    paddingHorizontal: 16,
+  },
+  bottomSheetHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+    paddingTop: 8,
+  },
+  titleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  bottomSheetTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: 'white',
+  },
+  closeButton: {
+    padding: 5,
+  },
+  bottomSheetContent: {
+    paddingHorizontal: 16,
+  },
+  bottomSheetDescription: {
+    fontSize: 14,
+    color: 'gray',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  emailInputContainer: {
+    backgroundColor: Colours.header_colour,
+    borderRadius: 10,
+    marginBottom: 15,
+  },
+  emailInput: {
+    color: 'white',
+    padding: 15,
+  },
+  resetButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colours.tertiary_colour,
+    borderRadius: 10,
+    padding: 15,
+  },
+  resetButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
 });

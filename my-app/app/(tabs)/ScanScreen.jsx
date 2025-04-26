@@ -4,10 +4,13 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useRouter } from 'expo-router';
 import Colours from '../../constant/Colours';
 import AntDesign from '@expo/vector-icons/AntDesign';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import * as Haptics from 'expo-haptics';
 
 export default function ScanScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [isScanningEnabled, setIsScanningEnabled] = useState(true);
+  const [isFlashOn, setIsFlashOn] = useState(false);
   const isPermissionGranted = Boolean(permission?.granted);
   const router = useRouter();
 
@@ -38,7 +41,7 @@ export default function ScanScreen() {
       return;
     }
 
-    console.log('Valid itemID:', data);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     
     // Disable scanning temporarily to prevent multiple navigations
     setIsScanningEnabled(false);
@@ -63,6 +66,7 @@ export default function ScanScreen() {
             style={StyleSheet.absoluteFill}
             facing="back"
             onBarcodeScanned={isScanningEnabled ? handleBarcodeScanned : undefined}
+            enableTorch={isFlashOn}
             barcodeScannerSettings={{
               barcodeTypes: ['qr'], // Only scan QR codes
             }}
@@ -75,6 +79,18 @@ export default function ScanScreen() {
               <View style={styles.overlaySide} />
             </View>
             <View style={styles.overlayRow} />
+            <View style={styles.flashlightContainer}>
+              <TouchableOpacity 
+                onPress={() => {setIsFlashOn(!isFlashOn), Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}} 
+                style={styles.flashlightButton}
+              >
+                <MaterialIcons 
+                  name={isFlashOn ? "flashlight-on" : "flashlight-off"} 
+                  size={24} 
+                  color="white" 
+                />
+              </TouchableOpacity>
+            </View>
               <View style={styles.infobox}>
                 <View style={styles.infoContainer}>
                 <AntDesign style={styles.infoIcon} name="infocirlceo" size={18} color="white" />
@@ -186,5 +202,18 @@ const styles = StyleSheet.create({
     },
     infoIcon: {
       marginRight: 10,
-    }
+    },
+    flashlightContainer: {
+      position: 'absolute',
+      bottom: 80,
+      alignSelf: 'center',
+    },
+    flashlightButton: {
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      width: 50,
+      height: 50,
+      borderRadius: 25,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
   });

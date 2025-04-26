@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { AntDesign, Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect } from '@react-navigation/native';
 import Colours from '../../constant/Colours';
 import { collection, query, where, getDocs, doc, getDoc, deleteDoc } from 'firebase/firestore';
 import { db, auth } from '../../config/firebaseConfig';
@@ -152,6 +153,12 @@ export default function InventoryScreen() {
     fetchLocations();
     fetchCategories();
   }, []);
+
+  useFocusEffect(
+      React.useCallback(() => {
+        fetchInventoryItems();
+      }, [])
+    );
 
   const onRefresh = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
