@@ -3,8 +3,9 @@ import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'rea
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useRouter } from 'expo-router';
 import Colours from '../../constant/Colours';
+import AntDesign from '@expo/vector-icons/AntDesign';
 
-export default function QRScannerScreen() {
+export default function ScanScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [isScanningEnabled, setIsScanningEnabled] = useState(true);
   const isPermissionGranted = Boolean(permission?.granted);
@@ -66,6 +67,23 @@ export default function QRScannerScreen() {
               barcodeTypes: ['qr'], // Only scan QR codes
             }}
           />
+          <View style={styles.scanOverlay}>
+            <View style={styles.overlayRow} />
+            <View style={styles.overlayMiddle}>
+              <View style={styles.overlaySide} />
+              <View style={styles.hole} />
+              <View style={styles.overlaySide} />
+            </View>
+            <View style={styles.overlayRow} />
+              <View style={styles.infobox}>
+                <View style={styles.infoContainer}>
+                <AntDesign style={styles.infoIcon} name="infocirlceo" size={18} color="white" />
+                <Text style={styles.infoboxText}>
+                  Scan a QR code to edit an item.
+                </Text>
+                </View>
+              </View>
+          </View>
           {!isScanningEnabled && (
             <View style={styles.overlay}>
               <ActivityIndicator size="large" color="white" />
@@ -123,4 +141,50 @@ const styles = StyleSheet.create({
       justifyContent: 'center',
       alignItems: 'center',
     },
+    scanOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    overlayRow: {
+      flex: 1,
+      width: '100%',
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    },
+    overlayMiddle: {
+      flexDirection: 'row',
+    },
+    overlaySide: {
+      width: '50%',
+      height: 240,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    },
+    hole: {
+      width: 240,
+      height: 240,
+      borderRadius: 3,
+      borderWidth: 2,
+      borderColor: 'white',
+    },
+    infobox: {
+      position: 'absolute',
+      bottom: 25,
+      backgroundColor: Colours.bg_colour,
+      borderRadius: 10,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    infoContainer: {
+      padding: 10,
+      flexDirection: 'row',
+      alignItems: 'row',
+    },
+    infoboxText: {
+      color: 'white',
+      fontSize: 16,
+      textAlign: 'center',
+    },
+    infoIcon: {
+      marginRight: 10,
+    }
   });

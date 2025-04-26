@@ -8,17 +8,21 @@ import {
   Animated, 
   ActivityIndicator, 
   RefreshControl, 
-  TouchableOpacity 
+  TouchableOpacity,
+  Alert
 } from 'react-native';
 import { AntDesign, Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import Colours from '../../constant/Colours';
-import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc, deleteDoc } from 'firebase/firestore';
 import { db, auth } from '../../config/firebaseConfig';
 import * as Haptics from 'expo-haptics';
 import { Link } from 'expo-router';
+import RBSheet from 'react-native-raw-bottom-sheet';
+import { useRouter } from 'expo-router';
 
 export default function InventoryScreen() {
+  const router = useRouter();
   const navigation = useNavigation();
   const [searchQuery, setSearchQuery] = useState('');
   const [inventoryItems, setInventoryItems] = useState([]);
@@ -33,7 +37,9 @@ export default function InventoryScreen() {
   const [hubs, setHubs] = useState([]);
   const [locations, setLocations] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [selectedItem, setSelectedItem] = useState(null);
   const scrollY = useRef(new Animated.Value(0)).current;
+  const refRBSheet = useRef();
 
   const fetchInventoryItems = async () => {
     try {
@@ -225,35 +231,43 @@ export default function InventoryScreen() {
 
   const renderItem = ({ item }) => (
     <View style={styles.itemContainer}>
-      <View style={[styles.colorStrip, { backgroundColor: item.hubColor }]} />
-      <View style={styles.itemContent}>
-        <View style={styles.itemHeader}>
-          <Text style={styles.itemName}>{item.name}</Text>
-          <Link href={{
-            pathname: "/editItemModal",
-            params: { 
-              itemId: item.id
-            }
-          }} push asChild>
-            <TouchableOpacity 
-              onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
-              style={styles.editButton}
-            >
-              <Feather name="edit-2" size={20} color={Colours.tertiary_colour} />
-            </TouchableOpacity>
-          </Link>
-        </View>
-        
-        <View style={styles.itemDetails}>
-          <View style={styles.quantityContainer}>
-            <Text style={styles.quantityText}>{item.quantity}</Text>
-          </View>
-          <Text style={styles.locationText}>
-            {item.hub.toUpperCase()}/{item.location}
-          </Text>
-        </View>
+    <View style={[styles.colorStrip, { backgroundColor: item.hubColor }]} />
+    <View style={styles.itemContent}>
+      <View style={styles.itemHeader}>
+        <Text style={styles.itemName}>{item.name}</Text>
+        <TouchableOpacity 
+          style={styles.menuButton}
+          onPress={(e) => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setSelectedItem(item);
+            refRBSheet.current.open();
+          }}
+        >
+          <AntDesign name="ellipsis1" size={20} color="#aaa" />
+        </TouchableOpacity>
+      </View>
+      <Text style={styles.locationText}>
+        {item.hub.toUpperCase()}/{item.location}
+      </Text>
+      <View style={styles.itemDetails}>
+        <Text style={styles.quantityText}>{item.quantity}</Text>
+        {item.categories && item.categories.length > 0 && (
+          <FlatList
+            data={categories.filter(cat => item.categories.includes(cat.id))}
+            renderItem={({ item: category }) => (
+              <View style={[styles.categoryPill]}>
+                <Text style={styles.categoryPillText}>{category.name}</Text>
+              </View>
+            )}
+            keyExtractor={(category) => category.id}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.categoriesContainer}
+          />
+        )}
       </View>
     </View>
+  </View>
   );
 
   const renderFilterItem = ({ item }) => {
@@ -323,6 +337,40 @@ export default function InventoryScreen() {
       </View>
     );
   }
+
+  const handleDeleteItem = async (itemId) => {
+    try {
+      Alert.alert(
+        'Delete Item',
+        'Are you sure you want to delete this item?',
+        [
+          {
+            text: 'Cancel',
+            style: 'cancel',
+          },
+          {
+            text: 'Delete',
+            onPress: async () => {
+              // Delete the item document from Firestore
+              await deleteDoc(doc(db, 'items', itemId));
+              
+              // Update the local state to remove the deleted item
+              setInventoryItems(prevItems => prevItems.filter(item => item.id !== itemId));
+              setFilteredItems(prevItems => prevItems.filter(item => item.id !== itemId));
+              
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              Alert.alert('Success', 'Item deleted successfully');
+            },
+            style: 'destructive',
+          },
+        ]
+      );
+    } catch (error) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      console.error('Error deleting item:', error);
+      Alert.alert('Error', 'Failed to delete item');
+    }
+  };
 
   return (
     <View style={{ flex: 1 }}>
@@ -477,6 +525,96 @@ export default function InventoryScreen() {
           />
         }
       />
+      <RBSheet
+        ref={refRBSheet}
+        height={265}
+        useNativeDriver={false}
+        closeOnPressMask={true}
+        draggable={false}
+        customStyles={{
+          wrapper: {
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          },
+          draggableIcon: {
+            backgroundColor: '#ccc',
+          },
+          container: {
+            backgroundColor: Colours.bg_colour,
+            borderTopLeftRadius: 20,
+            borderTopRightRadius: 20,
+            padding: 10,
+          },
+        }}
+        customModalProps={{
+          animationType: 'fade',
+          statusBarTranslucent: true,
+        }}
+        customAvoidingViewProps={{
+          enabled: false,
+        }}>
+        <View style={styles.bottomSheetContainer}>
+        <View style={styles.bottomSheetHeader}>
+          <View style={styles.titleContainer}>
+            <Text style={styles.bottomSheetTitle}>Item Settings - </Text>
+            <Text style={styles.bottomSheetTitle1}>{selectedItem?.name || 'Selected Item'}</Text>
+          </View>
+          <TouchableOpacity 
+            onPress={() => refRBSheet.current.close()}
+            style={styles.closeButton}
+          >
+            <AntDesign name="close" size={20} color="white" />
+          </TouchableOpacity>
+        </View>
+          
+          <View style={styles.settingsContainer}>
+          <TouchableOpacity 
+            style={styles.settingItem}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              if (selectedItem) {
+                console.log('Selected Item:', selectedItem.id);
+                router.push({
+                  pathname: 'editItemModal',
+                  params: { itemId: selectedItem.id }
+                });
+              }
+              refRBSheet.current.close();
+            }}
+          >
+            <Feather name="edit" size={20} color="white" style={styles.settingIcon} />
+            <Text style={styles.settingText}>Edit Item</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.settingItem}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              if (selectedItem) {
+                navigation.navigate('QRCode', { itemId: selectedItem.id });
+              }
+              refRBSheet.current.close();
+            }}
+          >
+            <AntDesign name="qrcode" size={20} color="white" style={styles.settingIcon} />
+            <Text style={styles.settingText}>Item QR Code</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={[styles.settingItem, styles.deleteItem]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              if (selectedItem) {
+                handleDeleteItem(selectedItem.id);
+              }
+              refRBSheet.current.close();
+            }}
+          >
+            <AntDesign name="delete" size={20} color="red" style={styles.settingIcon} />
+            <Text style={[styles.settingText, { color: 'red' }]}>Delete Item</Text>
+          </TouchableOpacity>
+          </View>
+        </View>
+      </RBSheet>
     </View>
   );
 }
@@ -616,27 +754,49 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     borderRadius: 10,
     overflow: 'hidden',
-    paddingRight: 8,
+    padding: 12,
   },
   colorStrip: {
     width: 6,
+    borderRadius: 10,
+  },
+  menuButton: {
+    padding: 2,
+    marginLeft: 10,
+  },
+  categoriesContainer: {
+    flexGrow: 1,
+  },
+  
+  categoryPill: {
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    marginRight: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  
+  categoryPillText: {
+    fontSize: 12,
+    color: Colours.tertiary_colour,
+    fontWeight: '500',
   },
   itemContent: {
     flex: 1,
-    padding: 14,
+    paddingLeft: 12,
+    justifyContent: 'space-between',
   },
   itemHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 6,
   },
   itemName: {
     fontSize: 16,
     fontWeight: '600',
     color: 'white',
-    flex: 1,
-    paddingRight: 10,
   },
   editButton: {
     backgroundColor: 'rgba(255,255,255,0.1)',
@@ -650,6 +810,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginTop: 4,
   },
   itemDetail: {
     fontSize: 14,
@@ -661,20 +822,82 @@ const styles = StyleSheet.create({
     marginTop: 20,
     fontSize: 16,
   },
-  quantityContainer: {
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
   quantityText: {
-    fontSize: 16,
+    fontSize: 26,
     fontWeight: '700',
     color: Colours.tertiary_colour,
+    textAlign: 'left',
+    marginRight: 8,
   },
   locationText: {
     fontSize: 13,
     color: '#aaa',
     letterSpacing: 0.5,
+  },
+  bottomSheetContainer: {
+    flex: 1,
+    paddingHorizontal: 16,
+  },
+  bottomSheetHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+    paddingTop: 8,
+  },
+  bottomSheetTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: 'white',
+  },
+  bottomSheetTitle1: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: Colours.tertiary_colour,
+  },
+  closeButton: {
+    padding: 5,
+  },
+  settingsContainer: {
+    width: '100%',
+    borderRadius: 15,
+    backgroundColor: Colours.header_colour,
+    marginBottom: 20,
+  },
+  settingItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  settingIcon: {
+    marginRight: 15,
+  },
+  settingText: {
+    fontSize: 16,
+    color: 'white',
+    fontWeight: '500',
+  },
+  deleteItem: {
+    borderBottomWidth: 0, // Remove border for the last item
+  },
+  titleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  bottomSheetTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: 'white',
+  },
+  bottomSheetTitle1: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: Colours.tertiary_colour,
+    flexShrink: 1, // Allows text to shrink if needed
   },
 });
