@@ -69,6 +69,14 @@ export default function TabLayout() {
         options={{
           headerTitle: 'ALERTS',
           tabBarLabel: 'Alerts',
+          headerRight: () => (
+            <TouchableOpacity 
+              onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
+              style={{ marginRight: 20 }}
+            >
+              <Feather name="refresh-ccw" size={20} color="#f9f9f9" />
+            </TouchableOpacity>
+          ),
           tabBarIcon: ({ color, size }) => (
             <AntDesign name="bells" size={size} color={color} />
           ),

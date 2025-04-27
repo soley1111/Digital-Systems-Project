@@ -597,7 +597,10 @@ export default function InventoryScreen() {
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               if (selectedItem) {
-                navigation.navigate('QRCode', { itemId: selectedItem.id });
+                router.push({
+                  pathname: 'qrCodeModal',
+                  params: { itemId: selectedItem.id }
+                });
               }
               refRBSheet.current.close();
             }}
@@ -832,7 +835,7 @@ const styles = StyleSheet.create({
   quantityText: {
     fontSize: 26,
     fontWeight: '700',
-    color: Colours.tertiary_colour,
+    color: '#ccc',
     textAlign: 'left',
     marginRight: 8,
   },
@@ -889,7 +892,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   deleteItem: {
-    borderBottomWidth: 0, // Remove border for the last item
+    borderBottomWidth: 0,
   },
   titleContainer: {
     flexDirection: 'row',
@@ -905,6 +908,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: Colours.tertiary_colour,
-    flexShrink: 1, // Allows text to shrink if needed
+    flexShrink: 1,
   },
 });

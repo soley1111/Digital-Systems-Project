@@ -45,17 +45,20 @@ interface Category {
   name: string;
 }
 
-
-// ItemModal screen for creating a new item
-
-// Add SKU and QR code fields if needed
+interface EditHistoryItem {
+  date: Date;
+  previousQuantity: number;
+  newQuantity: number;
+  editedBy: string;
+}
 
 export default function ItemModal() {
   const router = useRouter();
   const [name, setName] = useState('');
+  const [sku, setSku] = useState('');
   const [description, setDescription] = useState('');
   const [quantity, setQuantity] = useState('1');
-  
+  const [minStock, setMinStock] = useState('1');
   const [loading, setLoading] = useState(false);
   const [hubs, setHubs] = useState<Hub[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
@@ -168,16 +171,27 @@ export default function ItemModal() {
     try {
       const itemRef = doc(collection(db, 'items'));
       
+      // Create initial edit history entry
+      const initialEditHistory: EditHistoryItem = {
+        date: new Date(),
+        previousQuantity: 0,
+        newQuantity: quantityNum,
+        editedBy: auth.currentUser?.email || 'system'
+      };
+
       await setDoc(itemRef, {
         name: name.trim(),
+        sku: sku.trim(),
         description: description.trim(),
         quantity: quantityNum,
         locationId: selectedLocationId,
         hubId: selectedHubId,
         categories: selectedCategories,
         owner: auth.currentUser?.email,
+        editHistory: [initialEditHistory],
         createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
+        updatedAt: serverTimestamp(),
+        minStock: parseInt(minStock) || 1,
       });
 
       // Add item to location's items array
@@ -255,6 +269,15 @@ export default function ItemModal() {
             onChangeText={setName}
           />
 
+          <Text style={styles.label}>SKU</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="SKU (optional)"
+            placeholderTextColor="#ccc"
+            value={sku}
+            onChangeText={setSku}
+          />
+
           <Text style={styles.label}>Description</Text>
           <TextInput
             style={[styles.input, { height: 100 }]}
@@ -274,7 +297,15 @@ export default function ItemModal() {
             onChangeText={setQuantity}
             keyboardType="numeric"
           />
-
+          <Text style={styles.label}>Low Stock Threshold</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="1"
+              placeholderTextColor="#ccc"
+              value={minStock}
+              onChangeText={setMinStock}
+              keyboardType="numeric"
+            />
           {/* Categories FlatList */}
           <Text style={styles.label}>Categories</Text>
           {categories.length > 0 ? (

@@ -23,7 +23,8 @@ import {
   query,
   where,
   updateDoc,
-  serverTimestamp
+  serverTimestamp,
+  arrayUnion
 } from 'firebase/firestore';
 import { db, auth } from '../config/firebaseConfig';
 import * as Haptics from 'expo-haptics';
@@ -45,14 +46,24 @@ interface Category {
   name: string;
 }
 
+interface EditHistoryItem {
+  date: Date;
+  previousQuantity: number;
+  newQuantity: number;
+  editedBy: string;
+}
+
 interface ItemData {
   id: string;
   name: string;
+  sku: string;
   description: string;
   quantity: number;
   hubId: string;
   locationId: string;
   categories: string[];
+  editHistory?: EditHistoryItem[];
+  minStock: number;
 }
 
 export default function EditItemModal() {
@@ -72,6 +83,7 @@ export default function EditItemModal() {
   const [isChanged, setIsChanged] = useState(false);
   const [showHubPicker, setShowHubPicker] = useState(false);
   const [showLocationPicker, setShowLocationPicker] = useState(false);
+  const [minStock, setMinStock] = useState('1');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -92,14 +104,18 @@ export default function EditItemModal() {
         const fetchedItemData = {
           id: itemSnap.id,
           name: item.name || '',
+          sku: item.sku || '',
           description: item.description || '',
           quantity: item.quantity || 1,
           hubId: item.hubId || '',
           locationId: item.locationId || '',
-          categories: item.categories || []
+          categories: item.categories || [],
+          minStock: item.minStock || 1, 
+          editHistory: item.editHistory || []
         };
 
         setItemData(fetchedItemData);
+        setMinStock(fetchedItemData.minStock.toString());
         setSelectedHubId(item.hubId || '');
         setSelectedLocationId(item.locationId || '');
         setSelectedCategories(item.categories || []);
@@ -196,32 +212,59 @@ export default function EditItemModal() {
       Alert.alert('Error', 'Please provide an item name');
       return;
     }
-
+  
     if (!selectedHubId) {
       Alert.alert('Error', 'Please select a hub');
       return;
     }
-
+  
     if (!selectedLocationId) {
       Alert.alert('Error', 'Please select a location');
       return;
     }
-
+  
     setLoading(true);
-
+  
     try {
       const itemRef = doc(db, 'items', itemId);
+      const currentItem = await getDoc(itemRef);
       
-      await updateDoc(itemRef, {
+      if (!currentItem.exists()) {
+        throw new Error('Item not found');
+      }
+  
+      const currentData = currentItem.data();
+      const currentQuantity = currentData.quantity || 0;
+      const newQuantity = itemData.quantity;
+  
+      // Prepare the update data
+      const updateData: any = {
         name: itemData.name.trim(),
+        sku: itemData.sku.trim(),
         description: itemData.description.trim(),
-        quantity: itemData.quantity,
         locationId: selectedLocationId,
         hubId: selectedHubId,
         categories: selectedCategories,
-        updatedAt: serverTimestamp()
-      });
-
+        updatedAt: serverTimestamp(),
+        minStock: parseInt(minStock) || 1,
+      };
+  
+      // Only update quantity and add to edit history if it changed
+      if (newQuantity !== currentQuantity) {
+        updateData.quantity = newQuantity;
+        
+        const editEntry = {
+          date: new Date(),
+          previousQuantity: currentQuantity,
+          newQuantity: newQuantity,
+          editedBy: auth.currentUser?.email || 'unknown'
+        };
+        
+        updateData.editHistory = arrayUnion(editEntry);
+      }
+  
+      await updateDoc(itemRef, updateData);
+  
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert('Success', 'Item updated successfully!');
       router.back();
@@ -359,6 +402,18 @@ export default function EditItemModal() {
             }}
           />
 
+          <Text style={styles.label}>SKU</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="SKU (optional)"
+            placeholderTextColor="#ccc"
+            value={itemData.sku}
+            onChangeText={(text) => {
+              setItemData({...itemData, sku: text});
+              setIsChanged(true);
+            }}
+          />
+
           <Text style={styles.label}>Description</Text>
           <TextInput
             style={[styles.input, { height: 100 }]}
@@ -370,6 +425,18 @@ export default function EditItemModal() {
               setIsChanged(true);
             }}
             multiline
+          />
+          <Text style={styles.label}>Low Stock Threshold</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="1"
+            placeholderTextColor="#ccc"
+            value={minStock}
+            onChangeText={(text) => {
+              setMinStock(text);
+              setIsChanged(true);
+            }}
+            keyboardType="numeric"
           />
 
           {/* Categories */}

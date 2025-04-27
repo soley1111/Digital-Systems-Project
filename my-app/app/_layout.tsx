@@ -36,6 +36,11 @@ export default function RootLayout() {
           headerShown: false,
           }}
           />
+          <Stack.Screen name="qrCodeModal" options= {{
+          presentation: "modal",
+          headerShown: false,
+          }}
+          />
         </Stack>
       </UserDetailContext.Provider>
     </GestureHandlerRootView>

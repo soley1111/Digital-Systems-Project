@@ -127,33 +127,16 @@ export default function ProfileScreen() {
             </TouchableOpacity>
         </Link>
         <TouchableOpacity
-          style={[styles.settingItem, { borderBottomWidth: 0 }]}
+          style={[styles.settingItem, { borderBottomWidth: 1 }]}
           onPress={() => {refRBSheet.current.open();}}
         >
           <AntDesign name="delete" size={20} color="white" style={styles.settingIcon} />
           <Text style={styles.settingText}>Delete Account</Text>
         </TouchableOpacity>
-      </View>
-      <View style={styles.settingsLabelContainer}>
-        <Text style={styles.settingsLabel}>App Settings</Text>
-      </View>
-      <View style={styles.settingsContainer}>
-        <View style={styles.settingItem}>
-          <Feather name="bell" size={20} color="white" style={styles.settingIcon} />
-          <Text style={styles.settingText}>Notifications</Text>
-          <Switch
-            value={isNotificationsEnabled}
-            onValueChange={toggleNotifications}
-            thumbColor={isNotificationsEnabled ? Colours.primary_colour : 'gray'}
-            trackColor={{ false: 'rgba(255, 255, 255, 0.2)', true: Colours.tertiary_colour }}
-            style={styles.notificationSwitch}
-          />
-      </View>
-          <TouchableOpacity style={[styles.settingItem, { borderBottomWidth: 0 }]}>
+        <TouchableOpacity style={[styles.settingItem, { borderBottomWidth: 0 }]}>
             <Feather name="info" size={20} color="white" style={styles.settingIcon} />
             <Text style={styles.settingText}>About</Text>
           </TouchableOpacity>
-        
       </View>
       
       <RBSheet
