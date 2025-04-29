@@ -1,27 +1,8 @@
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  FlatList, 
-  TouchableOpacity, 
-  ActivityIndicator,
-  RefreshControl,
-  Alert
-} from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator,RefreshControl} from 'react-native';
 import React, { useState, useEffect, useRef } from 'react';
 import Colours from '../../constant/Colours';
 import { AntDesign, Feather } from '@expo/vector-icons';
-import { 
-  collection, 
-  query, 
-  where, 
-  getDocs, 
-  doc, 
-  getDoc,
-  setDoc,
-  deleteDoc,
-  serverTimestamp
-} from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '../../config/firebaseConfig';
 import * as Haptics from 'expo-haptics';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -292,7 +273,6 @@ export default function AlertsScreen() {
               timestamp: serverTimestamp(),
               read: false,
               owner: auth.currentUser?.email,
-              actionTaken: false
             });
           }
         }
@@ -312,7 +292,6 @@ export default function AlertsScreen() {
               timestamp: serverTimestamp(),
               read: false,
               owner: auth.currentUser?.email,
-              actionTaken: false
             });
           }
         }
@@ -380,7 +359,6 @@ export default function AlertsScreen() {
                   timestamp: serverTimestamp(),
                   read: false,
                   owner: auth.currentUser?.email,
-                  actionTaken: false,
                   confidence: confidence,
                 });
               }

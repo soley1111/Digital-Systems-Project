@@ -10,23 +10,17 @@ import { UserDetailContext } from '../../context/userDetailContext';
 import ProfileImage from '../../components/ProfileImage';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import { Link } from 'expo-router';
-import { Switch } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import RBSheet from 'react-native-raw-bottom-sheet';
+import { collection, query, where, getDocs, doc, writeBatch } from 'firebase/firestore';
+import { db } from '../../config/firebaseConfig';
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const { userDetail } = useContext(UserDetailContext);
-  const [isNotificationsEnabled, setIsNotificationsEnabled] = useState(false);
   const refRBSheet = useRef();
-
-  const toggleNotifications = () => {
-    setIsNotificationsEnabled((previousState) => !previousState);
-    // Add logic here to handle enabling/disabling notifications
-  };
 
   // Function to handle sign out
   const handleSignOut = () => {
@@ -58,6 +52,62 @@ export default function ProfileScreen() {
     );
   };
 
+  // Function to delete all user data from Firestore
+  const deleteUserData = async (userId) => {
+    try {
+      const batch = writeBatch(db);
+      
+      // Delete all user's hubs and their locations
+      const hubsQuery = query(collection(db, 'hubs'), where('owner', '==', userId));
+      const hubsSnapshot = await getDocs(hubsQuery);
+      
+      // First collect all hub IDs to delete their locations
+      const hubIds = [];
+      hubsSnapshot.forEach((hubDoc) => {
+        hubIds.push(hubDoc.id);
+        batch.delete(hubDoc.ref);
+      });
+      
+      // Delete all locations in these hubs
+      const locationsQuery = query(collection(db, 'locations'), where('owner', '==', userId));
+      const locationsSnapshot = await getDocs(locationsQuery);
+      locationsSnapshot.forEach((locDoc) => {
+        batch.delete(locDoc.ref);
+      });
+      
+      // Delete all items
+      const itemsQuery = query(collection(db, 'items'), where('owner', '==', userId));
+      const itemsSnapshot = await getDocs(itemsQuery);
+      itemsSnapshot.forEach((itemDoc) => {
+        batch.delete(itemDoc.ref);
+      });
+      
+      // Delete all categories
+      const categoriesQuery = query(collection(db, 'categories'), where('owner', '==', userId));
+      const categoriesSnapshot = await getDocs(categoriesQuery);
+      categoriesSnapshot.forEach((catDoc) => {
+        batch.delete(catDoc.ref);
+      });
+      
+      // Delete all alerts
+      const alertsQuery = query(collection(db, 'alerts'), where('owner', '==', userId));
+      const alertsSnapshot = await getDocs(alertsQuery);
+      alertsSnapshot.forEach((alertDoc) => {
+        batch.delete(alertDoc.ref);
+      });
+      
+      // Delete user document
+      const userRef = doc(db, 'users', userId);
+      batch.delete(userRef);
+      
+      await batch.commit();
+      console.log('All user data deleted successfully');
+    } catch (error) {
+      console.error('Error deleting user data:', error);
+      throw error;
+    }
+  };
+
   // Function to handle account deletion
   const handleDeleteAccount = async () => {
     const user = auth.currentUser;
@@ -71,9 +121,13 @@ export default function ProfileScreen() {
       // Re-authenticate the user
       await signInWithEmailAndPassword(auth, user.email, password);
   
-      // Delete the user
+      // Delete all user data first
+      await deleteUserData(user.email);
+      
+      // Then delete the user account
       await deleteUser(user);
-      Alert.alert('Account Deleted', 'Your account has been successfully deleted');
+      
+      Alert.alert('Account Deleted', 'Your account and all data have been successfully deleted');
       router.replace('(login)');
     } catch (e) {
       let error = '';
@@ -89,6 +143,7 @@ export default function ProfileScreen() {
           break;
         default:
           error = 'An error occurred. Please try again';
+          console.error('Account deletion error:', e);
       }
       setErrorMessage(error);
     }
@@ -126,17 +181,22 @@ export default function ProfileScreen() {
               <Text style={styles.settingText}>My Categories</Text>
             </TouchableOpacity>
         </Link>
+        
         <TouchableOpacity
           style={[styles.settingItem, { borderBottomWidth: 1 }]}
+          onPress={() => router.push('/aboutModal')}
+        >
+            <Feather name="info" size={20} color="white" style={styles.settingIcon} />
+            <Text style={styles.settingText}>About</Text>
+          </TouchableOpacity>
+      
+        <TouchableOpacity
+          style={[styles.settingItem, { borderBottomWidth: 0 }]}
           onPress={() => {refRBSheet.current.open();}}
         >
           <AntDesign name="delete" size={20} color="white" style={styles.settingIcon} />
           <Text style={styles.settingText}>Delete Account</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.settingItem, { borderBottomWidth: 0 }]}>
-            <Feather name="info" size={20} color="white" style={styles.settingIcon} />
-            <Text style={styles.settingText}>About</Text>
-          </TouchableOpacity>
       </View>
       
       <RBSheet

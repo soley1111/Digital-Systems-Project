@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import React, { useState } from 'react';
 import Colours from '../../constant/Colours';
 import { useRouter } from 'expo-router';
@@ -13,8 +13,6 @@ import { Alert } from 'react-native';
 import * as Haptics from 'expo-haptics';
 
 // SIGN UP SCREEN
-
-// need checks for full name
 
 export default function SignUp() {
   const router = useRouter();
@@ -67,7 +65,6 @@ export default function SignUp() {
 
   // Save User to Database
   const SaveUser = async (user) => {
-    
     const data = {
       fullname: fullname,
       email: email,
@@ -80,77 +77,112 @@ export default function SignUp() {
     Alert.alert('Success', 'Account created successfully, please sign in.');
 
     setUserDetail(data);
-    
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>CREATE ACCOUNT</Text>
-      <Text style={styles.subtitle}>Please enter your details to create an account</Text>
-
-      <View style={styles.signUpBox}>
-        <Text style={styles.label}>FULL NAME</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="John Smith"
-          placeholderTextColor="#ccc"
-          onChangeText={(value) => setFullname(value)}
-        />
-
-        <Text style={styles.label}>EMAIL</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="example@gmail.com"
-          placeholderTextColor="#ccc"
-          onChangeText={(value) => setEmail(value)}
-        />
-
-        <Text style={styles.label}>PASSWORD</Text>
-        <TextInput
-          style={styles.input}
-          secureTextEntry
-          placeholder="••••••••••"
-          placeholderTextColor="#ccc"
-          onChangeText={(value) => setPassword(value)}
-        />
-
-        <Text style={styles.label}>CONFIRM PASSWORD</Text>
-        <TextInput
-          style={styles.input}
-          secureTextEntry
-          placeholder="••••••••••"
-          placeholderTextColor="#ccc"
-          onChangeText={(value) => setConfirmPassword(value)}
-        />
-        
-        <TouchableOpacity style={styles.signUpButton} onPress={CreateNewAccount}>
-          <Text style={styles.signUpText}>CREATE ACCOUNT</Text>
-        </TouchableOpacity>
-        <View style={styles.errorHolder}>
-          {errorMessage ? (
-            <View style={styles.errorContainer}>
-              <Feather name="alert-circle" size={18} color="red" style={styles.errorIcon} />
-              <Text style={styles.errorText}>{errorMessage}</Text>
-            </View>
-          ) : null}
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={styles.container}
+    >
+      <View style={styles.backgroundBox} />
+      
+      <ScrollView
+        contentContainerStyle={styles.scrollContainer}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.topSection}>
+          <Text style={styles.title}>CREATE ACCOUNT</Text>
+          <Text style={styles.subtitle}>Please enter your details to create an account</Text>
         </View>
-      </View>
+
+        <View style={styles.signUpBox}>
+          <Text style={styles.label}>FULL NAME</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="John Smith"
+            placeholderTextColor="#ccc"
+            onChangeText={(value) => setFullname(value)}
+            autoCapitalize="words"
+          />
+
+          <Text style={styles.label}>EMAIL</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="example@gmail.com"
+            placeholderTextColor="#ccc"
+            onChangeText={(value) => setEmail(value)}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+
+          <Text style={styles.label}>PASSWORD</Text>
+          <TextInput
+            style={styles.input}
+            secureTextEntry
+            placeholder="••••••••••"
+            placeholderTextColor="#ccc"
+            onChangeText={(value) => setPassword(value)}
+            autoCapitalize="none"
+          />
+
+          <Text style={styles.label}>CONFIRM PASSWORD</Text>
+          <TextInput
+            style={styles.input}
+            secureTextEntry
+            placeholder="••••••••••"
+            placeholderTextColor="#ccc"
+            onChangeText={(value) => setConfirmPassword(value)}
+            autoCapitalize="none"
+          />
+          
+          <TouchableOpacity style={styles.signUpButton} onPress={CreateNewAccount}>
+            <Text style={styles.signUpText}>CREATE ACCOUNT</Text>
+          </TouchableOpacity>
+          
+          <View style={styles.errorHolder}>
+            {errorMessage ? (
+              <View style={styles.errorContainer}>
+                <Feather name="alert-circle" size={18} color="red" style={styles.errorIcon} />
+                <Text style={styles.errorText}>{errorMessage}</Text>
+              </View>
+            ) : null}
+          </View>
+        </View>
+      </ScrollView>
+
       <View style={styles.fixedBottom}>
         <TouchableOpacity style={styles.backButton} onPress={() => router.back('(login)/SignIn')}>
           <AntDesign name="arrowleft" size={24} color="white" />
           <Text style={styles.backButtonText}>SIGN IN</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'flex-end',
-    alignItems: 'center',
     backgroundColor: Colours.bg_colour,
+  },
+  backgroundBox: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '50%',
+    backgroundColor: Colours.header_colour,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+  },
+  scrollContainer: {
+    flexGrow: 1,
+    justifyContent: 'flex-end',
+    paddingBottom: 100,
+  },
+  topSection: {
+    paddingHorizontal: 20,
+    marginBottom: 20,
   },
   title: {
     fontSize: 28,
@@ -167,14 +199,10 @@ const styles = StyleSheet.create({
   },
   signUpBox: {
     width: '100%',
-    flex: 0.75,
     backgroundColor: Colours.header_colour,
     borderRadius: 20,
     padding: 20,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    elevation: 5,
+    marginBottom: 20,
   },
   label: {
     fontSize: 16,
@@ -189,19 +217,6 @@ const styles = StyleSheet.create({
     padding: 15,
     marginTop: 10,
     color: 'white',
-  },
-  errorHolder: {
-    alignItems: 'center',
-  },
-  errorContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 15,
-  },
-  errorText: {
-    color: 'red',
-    marginLeft: 7,
-    textAlign: 'center',
   },
   signUpButton: {
     backgroundColor: Colours.tertiary_colour,
@@ -219,6 +234,7 @@ const styles = StyleSheet.create({
     bottom: 35,
     width: '100%',
     alignItems: 'center',
+    zIndex: 1,
   },
   backButton: {
     flexDirection: 'row',

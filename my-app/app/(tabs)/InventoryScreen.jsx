@@ -1,16 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  View, 
-  FlatList, 
-  Text, 
-  StyleSheet, 
-  TextInput, 
-  Animated, 
-  ActivityIndicator, 
-  RefreshControl, 
-  TouchableOpacity,
-  Alert
-} from 'react-native';
+import { View, FlatList, Text, StyleSheet, TextInput, Animated, ActivityIndicator, RefreshControl, TouchableOpacity,Alert} from 'react-native';
 import { AntDesign, Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useFocusEffect } from '@react-navigation/native';
@@ -18,7 +7,6 @@ import Colours from '../../constant/Colours';
 import { collection, query, where, getDocs, doc, getDoc, deleteDoc } from 'firebase/firestore';
 import { db, auth } from '../../config/firebaseConfig';
 import * as Haptics from 'expo-haptics';
-import { Link } from 'expo-router';
 import RBSheet from 'react-native-raw-bottom-sheet';
 import { useRouter } from 'expo-router';
 

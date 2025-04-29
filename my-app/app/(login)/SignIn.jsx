@@ -103,6 +103,13 @@ export default function SignIn() {
 
   return (
     <View style={styles.container}>
+      <TouchableOpacity 
+      style={styles.aboutButton}
+      onPress={() => router.push('/aboutModal')}
+    >
+      <Feather name="help-circle" size={16} color="white" />
+      <Text style={styles.aboutButtonText}>About</Text>
+    </TouchableOpacity>
       <Text style={styles.title}>SIGN IN</Text>
       <Text style={styles.subtitle}>Please sign in to your existing account</Text>
 
@@ -365,5 +372,21 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  aboutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colours.header_colour,
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    position: 'absolute',
+    top: 60,
+    right: 20,
+  },
+  aboutButtonText: {
+    color: 'white',
+    marginLeft: 5,
+    fontSize: 14,
   },
 });
