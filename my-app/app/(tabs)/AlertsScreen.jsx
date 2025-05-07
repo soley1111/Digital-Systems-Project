@@ -9,7 +9,7 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import RBSheet from 'react-native-raw-bottom-sheet';
 import { useRouter } from 'expo-router';
 
-// Helper function to convert Firestore timestamps
+// Function to convert Firestore timestamps to just a date
 const convertFirestoreTimestamp = (timestamp) => {
   if (!timestamp) return new Date();
   if (timestamp.toDate) return timestamp.toDate();
@@ -65,7 +65,8 @@ export default function AlertsScreen() {
     }
   };
 
-  // Forecasting helper functions with debug logging
+  // Linear Regression Algorithm used for forecasting
+  // This function calculates the number of days remaining based on linear regression
   const calculateLinearForecast = (history, currentQuantity) => {
     console.log('[Linear Forecast] Calculating...');
     let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
@@ -89,7 +90,7 @@ export default function AlertsScreen() {
     
     return result;
   };
-
+// Not used in the original code, but kept for consistency
   const calculateExponentialForecast = (history, currentQuantity, alpha = 0.3) => {
     console.log('[Exponential Forecast] Calculating...');
     let forecast = history[0].newQuantity;
@@ -132,6 +133,7 @@ export default function AlertsScreen() {
     return result;
   };
 
+  // Not used in the original code, but kept for consistency
   const calculateMovingAverageForecast = (history, currentQuantity, windowSize = 3) => {
     console.log('[Moving Avg Forecast] Calculating...');
     const usages = [];
@@ -223,7 +225,8 @@ export default function AlertsScreen() {
     return totalScore;
   };
 
-  // Generate new alerts with comprehensive logging
+  // Generate new alerts with comprehensive logging for testing
+  // This function checks the inventory items and generates alerts based on their status
   const generateAlerts = async () => {
     console.log('\n=== STARTING ALERT GENERATION ===');
     try {

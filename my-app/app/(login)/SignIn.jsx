@@ -14,7 +14,6 @@ import * as Haptics from 'expo-haptics';
 import RBSheet from 'react-native-raw-bottom-sheet';
 
 // SIGN IN SCREEN
-// COMPLETED
 
 export default function SignIn() {
   const router = useRouter();

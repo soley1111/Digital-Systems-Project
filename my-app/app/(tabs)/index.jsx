@@ -149,7 +149,7 @@ export default function HomeScreen() {
         }
       }
   
-      // Prepare chart data - get last 7 days including today
+      // Prepare chart data - get last 7 days including current day
       const chartLabels = [];
       const chartData = [];
       const now = new Date();
@@ -529,7 +529,6 @@ const styles = StyleSheet.create({
     marginTop: 20,
     fontStyle: 'italic',
   },
-  // Onboarding styles
   onboardingContainer: {
     flex: 1,
     paddingHorizontal: 10,

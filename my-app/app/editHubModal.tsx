@@ -15,10 +15,8 @@ import {
 import { AntDesign, Feather } from '@expo/vector-icons';
 import Colours from '../constant/Colours';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { 
-  setDoc, 
-  doc, 
-  updateDoc, 
+import {
+  doc,
   arrayUnion, 
   serverTimestamp, 
   writeBatch,
@@ -107,18 +105,15 @@ export default function EditHubModal() {
           color: selectedColor,
           updatedAt: serverTimestamp()
         });
-  
-        // New logic for handling location updates
+        // Handles location editing and deletion
         const updatedLocationIds: string[] = [];
   
         for (let i = 0; i < existingLocationDocs.length; i++) {
           const existingDoc = existingLocationDocs[i];
   
           if (deletes.has(i)) {
-            // Delete this location
             batch.delete(doc(db, 'locations', existingDoc.id));
           } else {
-            // Update name if it changed
             const newName = locations[i];
             if (newName !== existingDoc.name) {
               batch.update(doc(db, 'locations', existingDoc.id), {

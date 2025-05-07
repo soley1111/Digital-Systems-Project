@@ -148,6 +148,7 @@ export default function InventoryScreen() {
       }, [])
     );
 
+    // Refresh control for pull-to-refresh functionality
   const onRefresh = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setRefreshing(true);

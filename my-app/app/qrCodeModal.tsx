@@ -39,6 +39,7 @@ export default function QRCodeModal() {
   const [hasMediaPermission, setHasMediaPermission] = useState(false);
   const qrCodeRef = React.useRef<any>(null);
 
+  // Fetch item data from Firestore to generate QR code
   useEffect(() => {
     const fetchItemData = async () => {
       try {
@@ -71,6 +72,7 @@ export default function QRCodeModal() {
   }, [itemId]);
 
   useEffect(() => {
+    // Request media permissions for saving QR codes
     const requestMediaPermission = async () => {
       try {
         if (Platform.OS === 'android') {
@@ -95,6 +97,7 @@ export default function QRCodeModal() {
     requestMediaPermission();
   }, []);
 
+  // Function to handle sharing the QR code
   const handleShareQR = async () => {
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -120,6 +123,7 @@ export default function QRCodeModal() {
     }
   };
 
+  // Function to handle saving the QR code
   const handleSaveQR = async () => {
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);

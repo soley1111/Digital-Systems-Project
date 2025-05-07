@@ -41,11 +41,6 @@ export default function AboutScreen() {
           <Feather name="check-circle" size={18} color={Colours.tertiary_colour} />
           <Text style={styles.featureText}>View inventory trends with 7-day charts</Text>
         </View>
-        
-        <View style={styles.featureItem}>
-          <Feather name="check-circle" size={18} color={Colours.tertiary_colour} />
-          <Text style={styles.featureText}>Access your inventory from any device</Text>
-        </View>
       </View>
 
       <View style={styles.section}>

@@ -20,9 +20,7 @@ import {
   query, 
   where, 
   getDocs, 
-  doc, 
-  setDoc, 
-  deleteDoc,
+  doc,
   writeBatch
 } from 'firebase/firestore';
 import { db, auth } from '../config/firebaseConfig';
@@ -158,7 +156,7 @@ export default function CategoriesModal() {
       <TextInput
         style={[
           styles.categoryInput,
-          deletes.has(item.id) && styles.strikethroughText // Add line-through style
+          deletes.has(item.id) && styles.strikethroughText
         ]}
         value={edits[item.id] !== undefined ? edits[item.id] : item.name}
         onChangeText={(text) => updateCategory(item.id, text)}

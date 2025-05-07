@@ -2,7 +2,6 @@ import { View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator } fr
 import React, { useState, useEffect, useContext } from 'react';
 import Colours from '../../constant/Colours';
 import { useRouter } from 'expo-router';
-import AntDesign from '@expo/vector-icons/AntDesign';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../../config/firebaseConfig';
 import { getDoc, doc } from 'firebase/firestore';
@@ -45,12 +44,6 @@ export default function LoginScreen() {
 
   return (
     <View style={styles.background}>
-      <View style={styles.imageContainer}>
-        <Image
-          source={require('../../assets/icon1.png')}
-          style={{ width: 200, height: 200, alignSelf: 'center' }}
-        />
-      </View>
       <View style={styles.textContainer}>
         <Text style={styles.headerText}>QR Inventory Manager</Text>
         <Text style={styles.descriptionText}>
@@ -126,11 +119,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     position: 'absolute',
     bottom: 50,
-    width: '100%',
-  },
-  imageContainer: {
-    position: 'absolute',
-    bottom: '38%',
     width: '100%',
   },
 });

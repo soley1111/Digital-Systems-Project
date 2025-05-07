@@ -12,7 +12,7 @@ import {
   StyleSheet,
   FlatList
 } from 'react-native';
-import { AntDesign, Feather } from '@expo/vector-icons';
+import { AntDesign } from '@expo/vector-icons';
 import Colours from '../constant/Colours';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { 
@@ -92,7 +92,6 @@ export default function EditItemModal() {
           throw new Error('No item ID provided');
         }
 
-        // Fetch item data
         const itemRef = doc(db, 'items', itemId);
         const itemSnap = await getDoc(itemRef);
         
@@ -120,7 +119,6 @@ export default function EditItemModal() {
         setSelectedLocationId(item.locationId || '');
         setSelectedCategories(item.categories || []);
 
-        // Fetch hubs and categories in parallel
         const [hubsQuery, categoriesQuery] = await Promise.all([
           getDocs(query(collection(db, 'hubs'), where('owner', '==', auth.currentUser?.email))),
           getDocs(query(collection(db, 'categories'), where('owner', '==', auth.currentUser?.email)))
@@ -137,7 +135,6 @@ export default function EditItemModal() {
           name: doc.data().name
         })));
 
-        // Fetch locations if we have a hubId
         if (item.hubId) {
           const locationsQuery = query(
             collection(db, 'locations'),
@@ -207,6 +204,7 @@ export default function EditItemModal() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
+  // Function to save the item data
   const saveItem = async () => {
     if (!itemData || !itemData.name.trim()) {
       Alert.alert('Error', 'Please provide an item name');
@@ -358,7 +356,6 @@ export default function EditItemModal() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-        {/* Quantity Control */}
         <View style={styles.quantityContainer}>
           <TouchableOpacity 
             style={styles.quantityButton}
@@ -388,7 +385,6 @@ export default function EditItemModal() {
           </TouchableOpacity>
         </View>
 
-        {/* Item Details */}
         <View style={styles.formContainer}>
           <Text style={styles.label}>Item Name</Text>
           <TextInput
@@ -439,7 +435,6 @@ export default function EditItemModal() {
             keyboardType="numeric"
           />
 
-          {/* Categories */}
           <Text style={styles.label}>Categories</Text>
           {categories.length > 0 ? (
             <FlatList
@@ -454,7 +449,6 @@ export default function EditItemModal() {
             <Text style={styles.noCategoriesText}>No categories available</Text>
           )}
 
-          {/* Hub and Location */}
           <Text style={styles.label}>Hub and Location</Text>
           <View style={styles.row}>
             <TouchableOpacity 

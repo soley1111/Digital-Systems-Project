@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { AntDesign } from '@expo/vector-icons';
 import Colours from '../../constant/Colours';
 import { useRouter } from 'expo-router';
-import { collection,  query,  where,  getDocs, getDoc, doc, deleteDoc, arrayRemove, writeBatch } from 'firebase/firestore';
+import { collection,  query,  where,  getDocs, getDoc, doc, arrayRemove, writeBatch } from 'firebase/firestore';
 import { db, auth } from '../../config/firebaseConfig';
 import Feather from '@expo/vector-icons/Feather';
 import { Link } from 'expo-router';

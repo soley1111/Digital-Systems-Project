@@ -33,7 +33,7 @@ export default function ScanScreen() {
     // Validate the scanned data
     if (!isValidItemId(data)) {
       console.log('Invalid item ID format');
-      // Temporarily disable scanning to prevent rapid multiple scans
+      // Disable scanning to prevent rapid multiple scans
       setIsScanningEnabled(false);
       setTimeout(() => {
         setIsScanningEnabled(true);
@@ -52,7 +52,7 @@ export default function ScanScreen() {
       params: { itemId: data },
     });
 
-    // Re-enable scanning after navigation (in case user comes back)
+    // Re-enable scanning after navigation
     setTimeout(() => {
       setIsScanningEnabled(true);
     }, 2000);
@@ -68,7 +68,7 @@ export default function ScanScreen() {
             onBarcodeScanned={isScanningEnabled ? handleBarcodeScanned : undefined}
             enableTorch={isFlashOn}
             barcodeScannerSettings={{
-              barcodeTypes: ['qr'], // Only scan QR codes
+              barcodeTypes: ['qr'],
             }}
           />
           <View style={styles.scanOverlay}>
