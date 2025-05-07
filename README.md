@@ -64,23 +64,6 @@ A React Native inventory management application with QR code scanning and predic
 
 ## Architecture
 
-The app follows a modular structure:
-
-```
-src/
-├── components/       # Reusable UI components
-├── config/           # Firebase configuration
-├── constant/         # Colors, styles, and constants
-├── context/          # Global state management
-├── navigation/       # App navigation setup
-├── screens/          # Main app screens
-│   ├── AlertsScreen/ # Predictive alerts
-│   ├── HomeScreen/   # Dashboard
-│   ├── Inventory/    # Item management
-│   └── ScanScreen/   # QR scanning
-└── utils/            # Helper functions
-```
-
 Key architectural features:
 - TypeScript interfaces for all data models
 - Firebase real-time synchronization
