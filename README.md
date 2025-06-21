@@ -6,7 +6,7 @@ A React Native inventory management application with QR code scanning and predic
 - [Features](#features)
 - [Technical Stack](#technical-stack)
 - [Usage](#usage)
-- [Architecture](#architecture)
+- [Screenshots](#screenshots)
 
 ## Features
 
@@ -62,12 +62,8 @@ A React Native inventory management application with QR code scanning and predic
    - View predictive notifications in the Alerts tab
    - Get warnings before items run out or have run out
 
-## Architecture
+## Screenshots
 
-Key architectural features:
-- TypeScript interfaces for all data models
-- Firebase real-time synchronization
-- Optimised FlatList rendering for large inventories
-- Haptic feedback for important interactions
+![App Screenshots](https://github.com/user-attachments/assets/91afb2ea-f609-40e8-ab3f-1e80756a8f9f)
 
-Harvie Sole - 21024231
+### Made by Harvie Sole
